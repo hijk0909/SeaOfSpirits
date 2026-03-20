@@ -1,0 +1,50 @@
+// base_attachment.js
+
+export class Attachment {
+    constructor(spirit, socket){
+        this.spirit = spirit;
+        this.scene = spirit.scene;
+        this.parent = spirit.mesh;
+        this.socket = socket;
+        this.nodes = [];
+    }
+
+    create_root(socket){
+        const root = new BABYLON.TransformNode("Root", this.scene);
+        root.parent = this.parent;
+        root.position.copyFrom(socket.position);
+
+        // socket.normal の方向にroot（ローカルZ軸）を向ける
+        const normal = socket.normal.normalize();
+        const up = Math.abs(BABYLON.Vector3.Dot(normal, BABYLON.Vector3.Up())) < 0.99
+            ? BABYLON.Vector3.Up()
+            : BABYLON.Vector3.Right();
+        const rotMat = BABYLON.Matrix.LookAtLH(
+            BABYLON.Vector3.Zero(),
+            normal.scale(-1), // LookAtLHは-Z方向を向くので反転
+            up
+        ).invert();
+        root.rotationQuaternion = BABYLON.Quaternion.FromRotationMatrix(rotMat);
+
+        this.nodes.push(root);
+        return root;
+    }
+
+    setEnabled(enable){
+         for (const attachment of this.nodes){
+            attachment.setEnabled(enable);
+        }
+    }
+
+    update(time,delta){
+    }
+
+    dispose(){
+        for (const attachment of this.nodes){
+            if (!attachment.isDisposed()){
+                attachment.dispose();
+            }
+        }
+        this.attachments = null;
+    }
+}
