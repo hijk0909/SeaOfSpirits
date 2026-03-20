@@ -17,7 +17,7 @@ export class Spirit_Jelly extends Spirit {
 
         this.hp_max = 80;
         this.hp = this.hp_max;
-        this.hp_decrease = 0.02;
+        this.hp_decrease = 0.026;
 
         this.counter = 0;
         this.target = new BABYLON.Vector3(0,0,0);
@@ -52,7 +52,7 @@ export class Spirit_Jelly extends Spirit {
         if (socket){
             this.predation_socket = socket;
             this.predation_radius = 0.5;
-            this.predation_tribes = ["Spirit_Plankton"];
+            this.predation_classes = ["Spirit_Plankton"];
         }
 
         socket = this.get_socket(this.mesh, -0.00, 60, 180);

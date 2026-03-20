@@ -19,11 +19,15 @@ export class Spirit_Shark extends Spirit {
 
         this.hp_max = 200;
         this.hp = this.hp_max;
-        this.hp_decrease = 0.15;
+        this.hp_decrease = 0.08;
 
         this.rotate_speed = 1.3;
 
         this.counter = 0;
+        this.accel = 0;
+        this.target = new BABYLON.Vector3();
+        this.tmp_target = new BABYLON.Vector3();
+        this.tmp_accel = new BABYLON.Vector3();
     }
 
     create(type=null){
@@ -55,7 +59,7 @@ export class Spirit_Shark extends Spirit {
 
             this.predation_socket = socket;
             this.predation_radius = 1.2;
-            this.predation_tribes = ["Spirit_Fish"];
+            this.predation_classes = ["Spirit_Fish"];
         }
 
         socket = this.get_socket(this.mesh, 0.0, 15, 180);
@@ -119,24 +123,34 @@ export class Spirit_Shark extends Spirit {
 
         this.counter -= delta / 1000;
         if (this.counter < 0){
-            let count = 0, target = new BABYLON.Vector3(0,0,0), speed = 0.2;
+            this.counter = 1.0 + 1.0 * Math.random();
+
+            let count = 0;
+            this.tmp_target.set(0,0,0);
+
             for (let spirit of GameState.spirits){
-                if (this.predation_tribes.includes(spirit.class_name)){
+                if (this.predation_classes.includes(spirit.class_name)){
                     count++;
-                    target.addInPlace(spirit.root.position);
+                    this.tmp_target.addInPlace(spirit.root.position);
                 }
             }
+
             if (count > 0){
-                this.target = target.scale(1/count);
-                speed = 0.2;
+                this.tmp_target.scaleInPlace(1/count);
+                this.target.copyFrom(this.tmp_target);
+                this.accel = 0.2;
             } else {
                 this.target = new BABYLON.Vector3(Math.random()*6 -3, Math.random()*6 -3, Math.random()*6 -3);
-                speed = 0.01;
+                this.accel = 0.001;
             }
-            this.control_velocity.addInPlace(this.target.subtract(this.root.position).normalize().scale(speed));
-            this.counter = 0.1 + 1.5 * Math.random();
+
+            this.target.subtractToRef(this.root.position, this.tmp_accel);
+            this.tmp_accel.normalizeToRef(this.tmp_accel);
+            this.tmp_accel.scaleInPlace(this.accel);
+            this.control_velocity.copyFrom(this.tmp_accel);
         }
-        this.control_velocity.scaleInPlace(0.99);
+
+        this.control_velocity.scaleInPlace(0.98);
 
         this.rotate_to(this.control_velocity, delta);
 

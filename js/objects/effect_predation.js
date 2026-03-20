@@ -29,7 +29,9 @@ export class Effect_Predation extends Effect {
 
         // パーティクルシステムの生成
         const ps = new BABYLON.ParticleSystem("explosion", 200, this.scene);
+        // 再利用せずdisposeする場合はclone()しないと全パーティクルが消えるので注意
         ps.particleTexture = this.particleTexture.clone();
+        // ps.particleTexture = this.particleTexture;
         ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
         ps.minSize = 0.1;
         ps.maxSize = 0.5;
@@ -58,26 +60,27 @@ export class Effect_Predation extends Effect {
         ps.color2 = new BABYLON.Color4(1.0, 0.4, 0.1, 0.8);
         ps.colorDead = new BABYLON.Color4(0.1, 0.1, 0.1, 0.0);
 
-        // 再利用するので disposeOnSop は false
-        ps.disposeOnStop = false;
+        // 再利用するので disposeOnSop は false → メモリリーク対策で true
+        ps.disposeOnStop = true;
 
         // 終了時のイベントを追加
         this._particleObserver = this.scene.onBeforeRenderObservable.add(() => {
-            if (ps.getActiveCount() === 0) {
+            if (!ps.isStarted() && ps.getActiveCount() === 0) {
                 this.alive = false;
                 this.scene.onBeforeRenderObservable.remove(this._particleObserver);
             }
         });
 
         this.ps = ps;
+        this.ps.start(); //再利用時にはstart()を呼ばない
     }
 
     activate(pos){
         this.core_mesh.setEnabled(true);
         this.core_mesh.position.copyFrom(pos);
         this.ps.manualEmitCount = MANUAL_EMIT_COUNT;
-        this.ps.emitter = pos.clone();
-        this.ps.start(); 
+        this.ps.emitter = pos;
+        // this.ps.start(); 
         super.activate();
     }
     
@@ -119,15 +122,13 @@ export class Effect_Predation extends Effect {
     }
 
     update(time, delta){
-/*
-        this.light.intensity *= 0.95;
-*/
         this.update_core(delta);
+        super.update(time, delta);
     }
 
     dispose(){
         if (this.core_mesh){
-            console.log("core_mesh PRED disposed");
+            // console.log("core_mesh PRED disposed");
             this.core_mesh.dispose();
             this.core_mesh = null;
         }

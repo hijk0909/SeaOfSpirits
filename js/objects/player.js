@@ -5,8 +5,8 @@ import { Drawable } from "./base_drawable.js";
 import { MyMath } from '../utils/MathUtils.js';
 
 export class Player extends Drawable{
-    constructor(scene){
-        super(scene);
+    constructor(scene, cls){
+        super(scene, cls);
         this.prev_mouse_button = false;
 
         this.create();

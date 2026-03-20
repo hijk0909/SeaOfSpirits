@@ -55,7 +55,8 @@ export class UI {
             return tb;
         };
 
-        this.stat_plankton = _createTextBlock(panel, "PLANKTON:", "white");
+        this.stat_virus = _createTextBlock(panel, "VIRUS:", "magenta");
+        this.stat_plankton = _createTextBlock(panel, "PLANKTON:", "green");
         this.stat_fish = _createTextBlock(panel, "FISH:", "white");
         this.stat_jelly = _createTextBlock(panel, "JELLY:", "white");
         this.stat_shark = _createTextBlock(panel, "SHARK:", "white");
@@ -100,6 +101,7 @@ export class UI {
     }
 
     update_stat(){
+        this.stat_virus.text = `Virus: ${this._stat_text("Spirit_Virus")}`;
         this.stat_plankton.text = `Plankton: ${this._stat_text("Spirit_Plankton")}`;
         this.stat_fish.text = `Fish: ${this._stat_text("Spirit_Fish")}`;
         this.stat_jelly.text = `Jelly: ${this._stat_text("Spirit_Jelly")}`;

@@ -17,17 +17,19 @@ export class Spirit_Whale extends Spirit {
         this.isCollidable = true;
         this.mass = 6.0;
 
-        this.hp_max = 500;
+        this.base_alpha = 0.5;
+
+        this.hp_max = 200;
         this.hp = this.hp_max;
-        this.hp_decrease = 0.3;
+        this.hp_decrease = 0.05;
 
         this.counter = 0;
+        this.tmp_target = new BABYLON.Vector3();
+        this.tmp_accel = new BABYLON.Vector3();
     }
 
     create(type=null){
         // this.root.position = position.clone();
-        const alpha = 0.5;
-
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameterZ: 4.0, diameterX: 3.0, diameterY: 3.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -39,7 +41,7 @@ export class Spirit_Whale extends Spirit {
         mat.albedoColor = new BABYLON.Color3(0.2, 0.5, 0.8);
         mat.metallic = 0.2;
         mat.roughness = 1.0;
-        mat.alpha = alpha;
+        mat.alpha = this.base_alpha;
         this.mesh.material = mat;
 
         this.mesh.computeWorldMatrix(true);
@@ -49,41 +51,41 @@ export class Spirit_Whale extends Spirit {
         // ****************************************************
         socket = this.get_socket(this.mesh, 0.0, -5, 0);
         if (socket){
-            attachment = new Attachment_Mouth(this, socket, {hasTeeth : false, biteSpeed : 1.0, alpha : alpha});
+            attachment = new Attachment_Mouth(this, socket, {hasTeeth : false, biteSpeed : 1.0, alpha : this.base_alpha});
             this.attachments.push(attachment);
 
             this.predation_socket = socket;
             this.predation_radius = 5.0;
-            this.predation_tribes = ["Spirit_Plankton"];
+            this.predation_classes = ["Spirit_Plankton"];
         }
 
         socket = this.get_socket(this.mesh, 0.0, -15, 180);
         if (socket){
-            attachment = new Attachment_Tail(this, socket, {scale : 3.0, twist : true, alpha : alpha});
+            attachment = new Attachment_Tail(this, socket, {scale : 3.0, twist : true, alpha : this.base_alpha});
             this.attachments.push(attachment);
         }
 
         socket = this.get_socket(this.mesh, 0.5, 25, -45);
         if (socket){
-            attachment = new Attachment_Eye(this, socket, {scale : 1.0, alpha : alpha});
+            attachment = new Attachment_Eye(this, socket, {scale : 1.0, alpha : this.base_alpha});
             this.attachments.push(attachment);
         }
 
         socket = this.get_socket(this.mesh, 0.5, 25, +45);
         if (socket){
-            attachment = new Attachment_Eye(this, socket, {scale : 1.0, alpha : alpha});
+            attachment = new Attachment_Eye(this, socket, {scale : 1.0, alpha : this.base_alpha});
             this.attachments.push(attachment);
         }
 
         socket = this.get_socket(this.mesh, 0.1, -45, +90);
         if (socket){
-            attachment = new Attachment_Spine(this, socket, {diameterBottom : 1.0, height :2.0, alpha : alpha});
+            attachment = new Attachment_Spine(this, socket, {diameterBottom : 1.0, height :2.0, alpha : this.base_alpha});
             this.attachments.push(attachment);
         }
 
         socket = this.get_socket(this.mesh, 0.1, -45, -90);
         if (socket){
-            attachment = new Attachment_Spine(this, socket, {diameterBottom : 1.0, height :2.0, alpha : alpha});
+            attachment = new Attachment_Spine(this, socket, {diameterBottom : 1.0, height :2.0, alpha : this.base_alpha});
             this.attachments.push(attachment);
         }
 
@@ -106,21 +108,29 @@ export class Spirit_Whale extends Spirit {
 
         this.counter -= delta / 1000;
         if (this.counter < 0){
-            let count = 0, target = BABYLON.Vector3.Zero();
+            let count = 0;
+            this.tmp_target.set(0,0,0);
             for (let spirit of GameState.spirits){
-                if (this.predation_tribes.includes(spirit.class_name)){
+                if (this.predation_classes.includes(spirit.class_name)){
                     count++;
-                    target.addInPlace(spirit.root.position);
+                    this.tmp_target.addInPlace(spirit.root.position);
                 }
             }
             if (count > 0){
-                this.target = target.scale(1/count);
+                this.tmp_target.scaleInPlace(1/count);
+                this.target = this.tmp_target;
             } else {
                 this.target = new BABYLON.Vector3(Math.random()*10 -5, Math.random()*10 -5, Math.random()*10 -5);
             }
-            this.control_velocity = this.target.subtract(this.root.position).normalize().scale(0.04);
+
             this.counter = 4 + 4 * Math.random();
         }
+
+        this.target.subtractToRef(this.root.position, this.tmp_accel);
+        this.tmp_accel.normalizeToRef(this.tmp_accel);
+        this.tmp_accel.scaleInPlace(0.0005);
+        this.control_velocity.addInPlace(this.tmp_accel);
+        this.control_velocity.scaleInPlace(0.98);
 
         this.rotate_to(this.control_velocity, delta);
 

@@ -4,6 +4,7 @@ import { GameState } from "../GameState.js";
 import { Drawable } from "./base_drawable.js";
 
 const TMP_MATRIX = new BABYLON.Matrix(); //重なり解消計算で使うワーク
+const COLLISION_DISABLED_PERIOD = 1.0;
 
 export class Collidable extends Drawable {
 
@@ -15,6 +16,11 @@ export class Collidable extends Drawable {
         this.collisionRadius = 0.5; //自前の衝突判定用の半径
         this.mass = 1.0;
 
+        this.collided = false; //衝突したか
+        this.isCollidable_save = this.isCollidable;
+        this.collision_counter = 0; //連続衝突度合
+        this.collision_disabled_timer = 0; //衝突無効期間
+
         this.control_velocity = new BABYLON.Vector3();
         this.external_velocity = new BABYLON.Vector3();
         this.external_velocity_damping = 0.98;
@@ -23,9 +29,6 @@ export class Collidable extends Drawable {
         this.velocity = new BABYLON.Vector3();
 
         this.rotate_speed = 0.8;
-
-        this.oscilation_resolver = new OscillationResolver(this);
-        this.actual_move = new BABYLON.Vector3();
     }
 
     create(){
@@ -47,6 +50,8 @@ export class Collidable extends Drawable {
     }
 
     add_overlap_impulse(impulse) {
+        // console.log("overlap_impulse:", impulse.length());
+/*
         // 反発に微小なランダム回転を加える（5度〜10度の範囲）
         // 物理的なデッドロック（振動）を崩すために、Y軸（上方向）を軸に少し回転
         const randomAngle = (Math.random() * 10 + 5) * (Math.PI / 180);
@@ -61,10 +66,12 @@ export class Collidable extends Drawable {
 
         // 加工したベクトルを加算
         this.repulse_velocity.addInPlace(jitteredImpulse);
+*/
+        this.repulse_velocity.copyFrom(impulse.scale(-1));
 
-        // 最大速度のリミッター
         if (this.repulse_velocity.length() > GLOBALS.COLLIDABLE.MAX_REPULSE_VELOCITY) {
-            this.repulse_velocity.normalize().scaleInPlace(GLOBALS.COLLIDABLE.MAX_REPULSE_VELOCITY);
+            this.repulse_velocity.normalizeToRef(this.repulse_velocity);
+            this.repulse_velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_REPULSE_VELOCITY);
         }
     }
 
@@ -111,30 +118,56 @@ export class Collidable extends Drawable {
     }
 
 
+    set_dying(){
+        this.isCollidable = false;
+        this.control_velocity = BABYLON.Vector3.Zero();
+        this.external_velocity = BABYLON.Vector3.Zero();
+        super.set_dying();
+    }
+
     update(time, delta){
 
-        // 速度の計算
-        const control_ratio = BABYLON.Scalar.Clamp(1 - this.external_velocity.length() / GLOBALS.COLLIDABLE.CONTROL_LOSS_THRESHOLD, 0, 1);
+        if (!this.dying){
+            // 速度の計算
+            const control_ratio = BABYLON.Scalar.Clamp(1 - this.external_velocity.length() / GLOBALS.COLLIDABLE.CONTROL_LOSS_THRESHOLD, 0, 1);
 
-        this.velocity.copyFrom(this.control_velocity);
-        this.velocity.scaleInPlace(control_ratio);
-        this.velocity.addInPlace(this.external_velocity);
-        this.velocity.addInPlace(this.environment_velocity);
+            this.velocity.copyFrom(this.control_velocity);
+            this.velocity.scaleInPlace(control_ratio);
+            this.velocity.addInPlace(this.external_velocity);
+            this.velocity.addInPlace(this.repulse_velocity);
+            this.velocity.addInPlace(this.environment_velocity);
 
-        this.velocity.scaleInPlace(Math.min(delta, 33) / GLOBALS.DELTA);
-        // 移動の実行
-        // this.root.position.addInPlace(this.velocity.scale(delta/GLOBALS.DELTA));
-        this.root.position.addInPlace(this.velocity);
+            this.velocity.scaleInPlace(Math.min(delta, 33) / GLOBALS.DELTA);
 
-        // 外部からの速度の減衰
-        this.external_velocity.scaleInPlace(this.external_velocity_damping);
+            // 移動の実行
+            this.root.position.addInPlace(this.velocity);
 
-        // 重なり解消用速度のリセット
-        this.repulse_velocity.set(0,0,0);
+            // 外部からの速度の減衰
+            this.external_velocity.scaleInPlace(this.external_velocity_damping);
 
-        // 振動解決
-        // this.oscilation_resolver.detect(this.root.position);
-        // this.oscilation_resolver.update(time, delta);
+            // 重なり解消用速度のリセット
+            this.repulse_velocity.set(0,0,0);
+
+            // 連続衝突の永続回避
+            if (this.collided){
+                this.collision_counter += 2;
+                this.collided = false;
+                if (this.collision_counter > 10){
+                    // console.log("[COL] TOO MANY COLLISIONS");
+                    this.collision_disabled_timer = COLLISION_DISABLED_PERIOD;
+                    this.isCollidable_save = this.isCollidable;
+                    this.isCollidable = false;
+                }
+            } else {
+                this.collision_counter = Math.max(0, this.collision_counter -1);
+            }
+            if (this.collision_disabled_timer > 0){
+                this.collision_disabled_timer -= delta / 1000;
+                if (this.collision_disabled_timer < 0){
+                    this.isCollidable = this.isCollidable || this.isCollidable_save;
+                }
+            }
+        }
 
         super.update(time, delta);
     }
@@ -148,13 +181,12 @@ export class Collidable extends Drawable {
     }
 }
 
+/*
 // ◆振動の解決クラス
 class OscillationResolver {
     constructor(collidable){
         this.collidable = collidable;
-        this.oscillation_count = 0;
-        this.prev_position = new BABYLON.Vector3(0, 0, 0);
-        this.prev_delta = new BABYLON.Vector3(0, 0, 0);
+        this.collision_count = 0;
         this.prev_isCollidable = true;
         this.resolve_timer = 0;
     }
@@ -193,3 +225,4 @@ class OscillationResolver {
         }
     }
 } // End of OscilationResolver
+*/

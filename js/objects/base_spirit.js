@@ -2,8 +2,6 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Collidable } from "./base_collidable.js";
-import { MyMath } from "../utils/MathUtils.js";
-import { MyDraw } from "../utils/DrawUtils.js";
 
 const FLASH_TIME = 0.15; //秒
 const LOD_THRESHOLD = 9.0;
@@ -23,6 +21,7 @@ export class Spirit extends Collidable {
         this.emissive_materials = [];
         this.base_emissive_color = StateColor.NONE;
         this.flash_time = 0;
+        this.base_alpha = 1.0;
 
         this.hp_max = 100;
         this.hp = this.hp_max;
@@ -31,7 +30,7 @@ export class Spirit extends Collidable {
         this.predation_socket = null;
         this.predation_position = new BABYLON.Vector3();
         this.predation_radius = 0.2;
-        this.predation_tribes = [];
+        this.predation_classes = [];
 
         this.prev_LOD = false;
 
@@ -57,6 +56,7 @@ export class Spirit extends Collidable {
         this.root.setEnabled(true);
         this.root.position.copyFrom(pos);
         this.hp = this.hp_max;
+        this.set_alpha(this.base_alpha);
         super.activate();
     }
 
@@ -98,6 +98,15 @@ export class Spirit extends Collidable {
         });
     }
 
+    set_alpha(t=0){
+        this.emissive_materials.forEach(mat => {mat.alpha = t;});
+    }
+
+    set_dying(){
+        this.set_emissive_color(null, 0);
+        super.set_dying();
+    }
+
     get_socket(body_mesh, front, thetaDeg, phiDeg){
         const forward = new BABYLON.Vector3(0, 0, 1);
         const origin = body_mesh.getAbsolutePosition().add(forward.scale(front));
@@ -124,52 +133,57 @@ export class Spirit extends Collidable {
     }
 
     update(time, delta){
-        // 空腹化
-        this.hp -= this.hp_decrease;
-        if (this.hp < 0){
-            this.alive = false;
-            // console.log("starvation:", this.class_name);
-            GameState.spawn.activate("Effect_Extinction", 0, this.root.position);
-        }
-
-        // 環境流の計算
-        this.environment_velocity = GameState.player.get_environment_velocity(this.root.position);
-
-        // 捕食座標の更新
-        if (this.predation_socket){
-            // ソケット位置を親（this.mesh） のワールド行列でワールド空間に変換
-            const worldMatrix = this.mesh.getWorldMatrix();
-            this.predation_position = BABYLON.Vector3.TransformCoordinates(
-                this.predation_socket.position,
-                worldMatrix
-            );
-        }
-
-        // emissive color の表示更新
-        if (this.flash_time > 0) {
-            this.flash_time -= delta / 1000;
-            const t = Math.max(0, this.flash_time / FLASH_TIME); // 1→0
-            this.set_emissive_color(null, t);
-        }
-
-        // LOD（表示詳細度の制御）
-        if (this.prev_LOD){
-            if (this.root.position.z < LOD_THRESHOLD){
-                this.prev_LOD = false;
-                for (const attachment of this.attachments) attachment.setEnabled(true);
-            }
+        if (this.dying){
+            this.set_alpha(this.dying_ratio);
         } else {
-            if (this.root.position.z > LOD_THRESHOLD){
-                this.prev_LOD = true;
-                for (const attachment of this.attachments) attachment.setEnabled(false);
+            // 空腹化
+            this.hp -= this.hp_decrease;
+            if (this.hp < 0){
+                this.set_dying();
+                // console.log("starvation:", this.class_name);
+                GameState.spawn.activate("Effect_Extinction", 0, this.root.position);
+                // GameState.spawn.activate("Effect_Predation", 0, this.root.position);
+                GameState.asset.se.extinction.play_3D(this.root.position);
             }
-        }
-        if (!this.prev_LOD){
-            for (const attachment of this.attachments){
-                attachment.update(time, delta);
-            }
-        }
 
+            // 環境流の計算
+            this.environment_velocity = GameState.player.get_environment_velocity(this.root.position);
+
+            // 捕食座標の更新
+            if (this.predation_socket){
+                // ソケット位置を親（this.mesh） のワールド行列でワールド空間に変換
+                const worldMatrix = this.mesh.getWorldMatrix();
+                this.predation_position = BABYLON.Vector3.TransformCoordinates(
+                    this.predation_socket.position,
+                    worldMatrix
+                );
+            }
+
+            // フラッシュ
+            if (this.flash_time > 0) {
+                this.flash_time -= delta / 1000;
+                const t = Math.max(0, this.flash_time / FLASH_TIME); // 1→0
+                this.set_emissive_color(null, t);
+            }
+
+            // LOD（表示詳細度の制御）
+            if (this.prev_LOD){
+                if (this.root.position.z < LOD_THRESHOLD){
+                    this.prev_LOD = false;
+                    for (const attachment of this.attachments) attachment.setEnabled(true);
+                }
+            } else {
+                if (this.root.position.z > LOD_THRESHOLD){
+                    this.prev_LOD = true;
+                    for (const attachment of this.attachments) attachment.setEnabled(false);
+                }
+            }
+            if (!this.prev_LOD){
+                for (const attachment of this.attachments){
+                    attachment.update(time, delta);
+                }
+            }
+        }
         super.update(time, delta);
     }
 

@@ -2,17 +2,21 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from '../GameState.js';
 import { Player } from '../objects/player.js';
-import { Effect_Predation } from '../objects/effect_predation.js';
-import { Effect_Extinction } from '../objects/effect_extinction.js';
+import { Bubbles } from '../objects/bubbles.js';
 
 export class Exec {
     constructor(scene) {
         this.scene = scene;
-        GameState.player = new Player(this.scene);
+        GameState.player = new Player(this.scene, "Player");
+        GameState.bubbles = new Bubbles(this.scene, "Bubbles");
 
         this.max_plankton = 100;
         this.period_plankton = 1000;
         this.count_plankton = this.period_plankton;
+
+        this.max_virus = 100;
+        this.period_virus = 1130;
+        this.count_virus = this.period_virus;
 
         this.max_fish = 50;
         this.period_fish = 3000;
@@ -62,6 +66,26 @@ export class Exec {
             }
         }
 
+        this.count_virus -= delta;
+        if (this.count_virus < 0){
+            this.count_virus = this.period_virus;
+            if (this.count_class("Spirit_Virus") < this.max_virus){
+                const u = Math.random();
+                const v = Math.random();
+
+                const theta = Math.acos(2 * u - 1); // 0〜π
+                const phi = 2 * Math.PI * v;        // 0〜2π
+
+                const x = Math.sin(theta) * Math.cos(phi);
+                const y = Math.sin(theta) * Math.sin(phi);
+                const z = Math.cos(theta);
+
+                const pos = new BABYLON.Vector3(x, y, z).scale(19);
+
+                GameState.spawn.activate("Spirit_Virus", 0, pos);
+            }
+        }
+
         this.count_fish -= delta;
         if (this.count_fish < 0){
             this.count_fish = this.period_fish;
@@ -102,6 +126,9 @@ export class Exec {
         // ◆プレイヤー操作
         GameState.player.update(time, delta);
 
+        // ◆泡移動
+        GameState.bubbles.update(time, delta);
+
         // ◆精霊の管理
         for (let i = GameState.spirits.length - 1; i >= 0; i--) {
             const spirit = GameState.spirits[i];
@@ -117,10 +144,10 @@ export class Exec {
         // ◆精霊同士の当たり判定
         for (let i = 0; i < GameState.spirits.length - 1; i++){
             const obj1 = GameState.spirits[i];
-            if (!obj1.isCollidable) continue;
+            if (obj1.dying || !obj1.isCollidable) continue;
             for (let j = i + 1; j < GameState.spirits.length; j++){
                 const obj2 = GameState.spirits[j];
-                if (!obj2.isCollidable) continue;
+                if (obj2.dying || !obj2.isCollidable) continue;
                 this.check_collision(obj1, obj2);
             }
         }
@@ -128,21 +155,24 @@ export class Exec {
         // ◆捕食判定
         for (let i = 0; i < GameState.spirits.length; i++){
             const obj1 = GameState.spirits[i];
-            if (obj1.predation_socket === null) continue;
+            if (obj1.dying || obj1.predation_classes.length === 0) continue;
             for (let j = 0; j < GameState.spirits.length; j++){
                 const obj2 = GameState.spirits[j];
                 if (obj1 === obj2) continue;
-                if (!obj1.predation_tribes.includes(obj2.class_name)) continue;
+                if (obj2.dying || !obj1.predation_classes.includes(obj2.class_name)) continue;
                 if (this.check_predation(obj1, obj2)){
                     // console.log("predation:", obj1.class_name, obj2.class_name);
                     obj1.control_velocity.copyFrom(GLOBALS.ZERO_VECTOR); //[TEST]捕食したら停止
-                    obj2.alive = false;
+                    obj2.set_dying();
 
                     obj1.hp = Math.min(obj1.hp_max, obj1.hp + obj2.hp); //[TEST] 捕食相手のHPを取得
 
                     GameState.spawn.activate("Effect_Predation", 0, obj2.root.position);
                     GameState.asset.se.predation.play_3D(obj2.root.position);
-                    }
+
+                    // [TEST]
+                    GameState.bubbles.add_bubble(obj2.root.position);
+                }
             }
         }
 
@@ -159,13 +189,13 @@ export class Exec {
         }
 
     } // End of update
-
+/*
     // 汎用の当たり判定
     check_hit(pos1, rad1, pos2, rad2){
         const distance = BABYLON.Vector3.Distance(pos1, pos2);
         return (distance < rad1 + rad2);
     }
-
+*/
     // Spiritsクラス間の当たり判定
     check_predation(predator, prey){
 
@@ -176,7 +206,7 @@ export class Exec {
 
         const radius_sum = prey.collisionRadius + predator.predation_radius;
 
-        return distSq < radius_sum;
+        return distSq < radius_sum * radius_sum;
     }
 
     // Collidableクラス間の当たり判定
@@ -192,7 +222,6 @@ export class Exec {
         let impulse = null;
         if (distSq < radius_sum * radius_sum){
             // 衝突方向（normal は、obj1 から見た obj2 の相対位置）
-
             obj2.root.position.subtractToRef(obj1.root.position, this.tmpDiff)
 
             // const diff = obj2.root.position.clone().subtract(obj1.root.position);
@@ -219,6 +248,12 @@ export class Exec {
             impulse = this.tmpNormal.scale(-(1+e) * dot / (1/obj1.mass + 1/obj2.mass));
             obj1.add_impulse( impulse.scale(-1));
             obj2.add_impulse( impulse );
+
+            obj1.collided = true;
+            obj2.collided = true;
+
+            // [TEST]
+            GameState.bubbles.add_bubble(obj2.root.position);
 
             // ヒットした時に対象を光らせる
             if (impulse.length() > 0.2){

@@ -18,9 +18,9 @@ export class Spirit_Fish extends Spirit {
         this.isCollidable = true;
         this.mass = 1.0;
 
-        this.hp_max = 100;
+        this.hp_max = 20;
         this.hp = this.hp_max;
-        this.hp_decrease = 0.04;
+        this.hp_decrease = 0.01;
 
         this.perceptionRadius = 4.0;
         this.separationRadius = 3.0;
@@ -65,7 +65,7 @@ export class Spirit_Fish extends Spirit {
         if (socket){
             this.predation_socket = socket;
             this.predation_radius = 0.5;
-            this.predation_tribes = ["Spirit_Plankton"];
+            this.predation_classes = ["Spirit_Plankton"];
         }
 
         socket = this.get_socket(this.mesh, -0.1, 90, 0);

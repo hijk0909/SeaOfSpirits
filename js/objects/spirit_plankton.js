@@ -11,11 +11,11 @@ export class Spirit_Plankton extends Spirit {
         super(scene, class_name, id);
 
         this.disp_scale = 0.4;
-        this.collisionRadius = 0.20;
         this.isCollidable = false;
-        this.mass = 0.5;
+        // this.collisionRadius = 0.20;
+        // this.mass = 0.5;
 
-        this.hp_max = Math.random() * 100 + 50;
+        this.hp_max = 10;
         this.hp = this.hp_max;
         this.hp_decrease = 0.0;
 

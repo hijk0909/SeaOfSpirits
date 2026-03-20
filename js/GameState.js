@@ -32,6 +32,7 @@ export const GameState = {
     player : null,
     spirits : [],
     effects : [],
+    bubbles : null,
 
     reset(){
         this.elapsed_time = 0;

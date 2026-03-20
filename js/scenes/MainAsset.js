@@ -22,6 +22,9 @@ export class MainAsset extends Asset {
         this.se.predation = await MyAudio.load( "./assets/audio/se/se_predation.mp3" );
         this.se.predation.setVolume(0.8);
 
+        this.se.extinction = await MyAudio.load( "./assets/audio/se/se_extinction.mp3" );
+        this.se.extinction.setVolume(0.8);
+
         GameState.game.sceneManager.add_progress(1.0);
         // console.log("asset.preload:end");
     }

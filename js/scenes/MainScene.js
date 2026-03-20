@@ -129,6 +129,25 @@ export class MainScene extends Scene {
                 GameState.spawn.activate("Spirit_Plankton", i, pos);
             }
 
+            for(let i=0; i<1; i++){
+                const pos = new BABYLON.Vector3(
+                    Math.random()*8 - 4,
+                    Math.random()*8 - 4,
+                    -5
+                );
+                GameState.spawn.activate("Spirit_Shark", i, pos);
+            }
+
+/*
+            for(let i=0; i<1; i++){
+                const pos = new BABYLON.Vector3(
+                    Math.random()*8 - 4,
+                    Math.random()*8 - 4,
+                    Math.random()*8 - 4
+                );
+                GameState.spawn.activate("Spirit_Whale", i, pos);
+            }
+*/
 /*
             for(let i=0; i<10; i++){
                 const pos = new BABYLON.Vector3(
@@ -139,15 +158,6 @@ export class MainScene extends Scene {
                 GameState.spawn.activate("Spirit_Fish", i, pos);
             }
 
-            for(let i=0; i<2; i++){
-                const pos = new BABYLON.Vector3(
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4
-                );
-                GameState.spawn.activate("Spirit_Shark", i, pos);
-            }
-
             for(let i=0; i<5; i++){
                 const pos = new BABYLON.Vector3(
                     Math.random()*6 - 3,
@@ -155,15 +165,6 @@ export class MainScene extends Scene {
                     Math.random()*6 - 3
                 );
                 GameState.spawn.activate("Spirit_Jelly", i, pos);
-            }
-
-            for(let i=0; i<1; i++){
-                const pos = new BABYLON.Vector3(
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4
-                );
-                GameState.spawn.activate("Spirit_Whale", i, pos);
             }
 */
 

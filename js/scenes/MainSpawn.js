@@ -7,6 +7,7 @@ import { Spirit_Jelly } from "../objects/spirit_jelly.js";
 import { Spirit_Plankton } from "../objects/spirit_plankton.js";
 import { Spirit_Shark } from "../objects/spirit_shark.js";
 import { Spirit_Whale } from "../objects/spirit_whale.js";
+import { Spirit_Virus } from "../objects/spirit_virus.js";
 import { Effect_Extinction } from "../objects/effect_extinction.js";
 import { Effect_Predation } from "../objects/effect_predation.js";
 
@@ -20,6 +21,7 @@ export class Spawn {
             spirit_plankton : [],
             spirit_shark : [],
             spirit_whale : [],
+            spirit_virus : [],
             effect_extinction : [],
             effect_predation : []
         }
@@ -30,6 +32,7 @@ export class Spawn {
             'Spirit_Plankton'   : {class : Spirit_Plankton,     pool : this.pool.spirit_plankton,    list:GameState.spirits},
             'Spirit_Shark'      : {class : Spirit_Shark,        pool : this.pool.spirit_shark,       list:GameState.spirits},
             'Spirit_Whale'      : {class : Spirit_Whale,        pool : this.pool.spirit_whale,       list:GameState.spirits},
+            'Spirit_Virus'      : {class : Spirit_Virus,        pool : this.pool.spirit_virus,       list:GameState.spirits},
             'Effect_Extinction' : {class : Effect_Extinction,   pool : this.pool.effect_extinction,  list:GameState.effects}, 
             'Effect_Predation'  : {class : Effect_Predation,    pool : this.pool.effect_predation,   list:GameState.effects}
         }
@@ -60,25 +63,19 @@ export class Spawn {
     }
 
     dispose(){
-        // 稼働中のオブジェクト
+        // 稼働中のオブジェクトの破棄
         for (let i = GameState.spirits.length - 1; i >= 0; i--) {
             GameState.spirits[i].dispose();
             GameState.spirits.splice(i, 1);
         }
         GameState.spirits = [];
 
-        // プールのオブジェクト
-        for (const group of [this.mesh, this.texture, this.sprite, this.container, this.bgm, this.se, this.jingle, this.data, this.image]) {
-            for (const key in group){
-                const object = group[key];
-                if (object){
-                    // console.log("dispose.object:", object);
-                    object.dispose();
-                    group[key] = null;
-                }
+        // プールのオブジェクトの破棄
+        for (const key in this.pool) {
+            for (const obj of this.pool[key]) {
+                obj.dispose();
             }
         }
-        
 
     } // End of dispose
 }
