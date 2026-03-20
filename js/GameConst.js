@@ -2,8 +2,8 @@
 
 export const GLOBALS = {
 
-    VERSION : "0.1",
-    DATE : "2026.3.15",
+    VERSION : "0.2",
+    DATE : "2026.3.20",
 
     DELTA : 16.6667,
     ZERO_VECTOR : BABYLON.Vector3.Zero(),
