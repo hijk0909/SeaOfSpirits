@@ -2,13 +2,12 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
-import { Attachment_Tentacle} from "./attachment_tentacle.js";
 
 // クラゲ
 export class Spirit_Jelly extends Spirit {
 
-    constructor(scene, class_name, id){
-        super(scene, class_name, id);
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
 
         this.disp_scale = 1.0;
         this.collisionRadius = 0.30;
@@ -23,10 +22,9 @@ export class Spirit_Jelly extends Spirit {
         this.target = new BABYLON.Vector3(0,0,0);
     }
 
-    create(type=null){
+    create(params){
 
-        // this.root.position = position.clone();
-
+        // ◆ボディの作成
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "spirit_2_body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -44,16 +42,15 @@ export class Spirit_Jelly extends Spirit {
         this.mesh.material = mat;
 
         this.mesh.computeWorldMatrix(true);
-        let socket;
-        let attachment;
 
-        // ****************************************************
-        socket = this.get_socket(this.mesh, 0.0, 0, 0);
-        if (socket){
-            this.predation_socket = socket;
-            this.predation_radius = 0.5;
-            this.predation_classes = ["Spirit_Plankton"];
-        }
+        // ◆捕食口の設定
+        this.predation_classes = ["Spirit_Plankton"];
+        const predation_socket = this.get_socket(this.mesh, 0.0, 0, 0);
+        this.predation_position = predation_socket.position;
+        this.predation_radius = 0.5;
+
+/*
+
 
         socket = this.get_socket(this.mesh, -0.00, 60, 180);
         if (socket){
@@ -79,17 +76,33 @@ export class Spirit_Jelly extends Spirit {
             this.attachments.push(attachment);
         }
 
-        // ****************************************************
-        // 子meshを全てくっつけてから表示用の大きさを調整
-        this.mesh.scaling = new BABYLON.Vector3(this.disp_scale, this.disp_scale, this.disp_scale);
-
-        super.create(type);
-
-        // console.log("Spirit_1:this.root.position", this.id, this.root.position, this.mesh.position);
+*/
+        super.create(params);
     }
 
-    activate(pos){
-        super.activate(pos);
+    _set_attachment_definitions(){
+
+        let def;
+
+        def = {
+            name: "Attachment_Tentacle",
+            socket: {front: 0.0, thetaDeg:60, phiDeg:180},
+            params: {segmentCont : 4, length : 0.30, thicknessBase : 0.3, thicknessTip : 0.02}
+        };
+        this.attachment_definitions.push(structuredClone(def));
+
+        def.socket = {front: 0.0, thetaDeg:-60, phiDeg:180};
+        this.attachment_definitions.push(structuredClone(def));
+
+        def.socket = {front: 0.0, thetaDeg:0, phiDeg:120};
+        this.attachment_definitions.push(structuredClone(def));
+
+        def.socket = {front: 0.0, thetaDeg:0, phiDeg:-120};
+        this.attachment_definitions.push(structuredClone(def));
+    }
+
+    activate(pos, params){
+        super.activate(pos, params);
     }
 
     deactivate(){

@@ -8,8 +8,8 @@ const COLLISION_DISABLED_PERIOD = 1.0;
 
 export class Collidable extends Drawable {
 
-    constructor(scene, class_name){
-        super(scene, class_name);
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
 
         this.root.rotationQuaternion = new BABYLON.Quaternion(); //（注）this.root.rotation は使えなくなる
         this.isCollidable = true; //自前の衝突判定を行うか
@@ -23,16 +23,14 @@ export class Collidable extends Drawable {
 
         this.control_velocity = new BABYLON.Vector3();
         this.external_velocity = new BABYLON.Vector3();
-        this.external_velocity_damping = 0.98;
+        this.external_velocity_damping = 0.95;
         this.repulse_velocity = new BABYLON.Vector3();
+        this.repulse_velocity_damping = 0.70;
         this.environment_velocity = new BABYLON.Vector3();
         this.velocity = new BABYLON.Vector3();
 
+        this.max_speed = 1.0;
         this.rotate_speed = 0.8;
-    }
-
-    create(){
-        super.create();
     }
 
     get_up_vector(){
@@ -45,7 +43,8 @@ export class Collidable extends Drawable {
     add_impulse(impulse){
         this.external_velocity.addInPlace(impulse.scale(1/this.mass * GLOBALS.COLLIDABLE.IMPULSE_VELOCITY_RATIO));
         if (this.external_velocity.length() > GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY){
-            this.external_velocity.normalize().scaleInPlace(GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY);
+            this.external_velocity.normalize();
+            this.external_velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY);
         }
     }
 
@@ -67,10 +66,10 @@ export class Collidable extends Drawable {
         // 加工したベクトルを加算
         this.repulse_velocity.addInPlace(jitteredImpulse);
 */
-        this.repulse_velocity.copyFrom(impulse.scale(-1));
+        this.repulse_velocity.copyFrom(impulse);
 
         if (this.repulse_velocity.length() > GLOBALS.COLLIDABLE.MAX_REPULSE_VELOCITY) {
-            this.repulse_velocity.normalizeToRef(this.repulse_velocity);
+            this.repulse_velocity.normalize();
             this.repulse_velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_REPULSE_VELOCITY);
         }
     }
@@ -137,6 +136,11 @@ export class Collidable extends Drawable {
             this.velocity.addInPlace(this.repulse_velocity);
             this.velocity.addInPlace(this.environment_velocity);
 
+            // 速度制限とFPS補正
+            if (this.velocity.length > this.max_speed){
+                this.velocity.normalize();
+                this.velocity.scaleInPlace(this.max_speed);
+            }
             this.velocity.scaleInPlace(Math.min(delta, 33) / GLOBALS.DELTA);
 
             // 移動の実行
@@ -144,9 +148,7 @@ export class Collidable extends Drawable {
 
             // 外部からの速度の減衰
             this.external_velocity.scaleInPlace(this.external_velocity_damping);
-
-            // 重なり解消用速度のリセット
-            this.repulse_velocity.set(0,0,0);
+            this.repulse_velocity.scaleInPlace(this.repulse_velocity_damping);
 
             // 連続衝突の永続回避
             if (this.collided){

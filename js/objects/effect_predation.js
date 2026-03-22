@@ -6,19 +6,22 @@ const MANUAL_EMIT_COUNT = 40;
 
 export class Effect_Predation extends Effect {
 
-    constructor(scene, class_name){
-        super(scene, class_name);
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
         this.ps = null;
+        this.size_ratio = 1.0;
+
         this.core_mesh = null;
         this.core_time = 0.0;
         this.core_life = 1.0;
         this.core_emissiveColor = new BABYLON.Color3(1.0, 0.7, 0.4);
+
     }
 
-    create(type=""){
+    create(params){
         this.particleTexture = GameState.asset.texture.particle;
 
-        // 爆心
+        // 爆心（コア）
         this.core_mesh = BABYLON.MeshBuilder.CreateSphere("explosionCore", { diameter: 1.2, }, this.scene);
 
         const mat = new BABYLON.PBRMaterial("coreMat", this.scene);
@@ -29,26 +32,24 @@ export class Effect_Predation extends Effect {
 
         // パーティクルシステムの生成
         const ps = new BABYLON.ParticleSystem("explosion", 200, this.scene);
-        // 再利用せずdisposeする場合はclone()しないと全パーティクルが消えるので注意
+        // disposeする場合はclone()しないと全パーティクルが消えるので注意
         ps.particleTexture = this.particleTexture.clone();
-        // ps.particleTexture = this.particleTexture;
         ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
-        ps.minSize = 0.1;
-        ps.maxSize = 0.5;
-        ps.addSizeGradient(0, 0.1);   // 最初は小さく
-        ps.addSizeGradient(0.2, 1.0); // 一瞬で大きく
-        ps.addSizeGradient(1.0, 0.0); // 最後は消える
-        ps.minLifeTime = 0.4;
-        ps.maxLifeTime = 0.6;
 
-        // エミッターの位置を設定 (花火が始まる位置)
-        // ps.emitter = position.clone();
-        ps.minEmitPower = 5.0;
-        ps.maxEmitPower = 5.2;
+        const size = 0.6;
+        ps.addSizeGradient(0.0 * size, 0.4 * size);  // 最初は小さく
+        ps.addSizeGradient(0.4 * size, 1.0 * size);  // 一瞬で大きく
+        ps.addSizeGradient(1.0 * size, 0.0 * size) ; // 最後は消える
+
+        ps.minLifeTime = 0.6;
+        ps.maxLifeTime = 1.0;
+
+        ps.minEmitPower = 2.0;
+        ps.maxEmitPower = 2.2;
         ps.addVelocityGradient(0, 1.0); // 最初は速い
         ps.addVelocityGradient(1.0, 0.05); // 最後はほぼ止まる
         ps.emitRate = 300; 
-        ps.manualEmitCount = MANUAL_EMIT_COUNT; // 1回で放出するパーティクルの総数
+        // ps.manualEmitCount = MANUAL_EMIT_COUNT; // 1回で放出するパーティクルの総数
         const radius = 0.01; 
         const sphereEmitter = new BABYLON.SphereParticleEmitter(radius);
         ps.particleEmitterType = sphereEmitter;
@@ -60,28 +61,31 @@ export class Effect_Predation extends Effect {
         ps.color2 = new BABYLON.Color4(1.0, 0.4, 0.1, 0.8);
         ps.colorDead = new BABYLON.Color4(0.1, 0.1, 0.1, 0.0);
 
-        // 再利用するので disposeOnSop は false → メモリリーク対策で true
-        ps.disposeOnStop = true;
-
-        // 終了時のイベントを追加
-        this._particleObserver = this.scene.onBeforeRenderObservable.add(() => {
-            if (!ps.isStarted() && ps.getActiveCount() === 0) {
-                this.alive = false;
-                this.scene.onBeforeRenderObservable.remove(this._particleObserver);
-            }
-        });
+        // 再利用するため
+        ps.disposeOnStop = false;
 
         this.ps = ps;
         this.ps.start(); //再利用時にはstart()を呼ばない
+
+        super.create(params);
     }
 
-    activate(pos){
+    activate(pos, params){
+        if (params && params.size){
+            this.size_ratio = params.size * 5.0;
+        }
+
+        this.core_time = 0.0;
         this.core_mesh.setEnabled(true);
         this.core_mesh.position.copyFrom(pos);
-        this.ps.manualEmitCount = MANUAL_EMIT_COUNT;
-        this.ps.emitter = pos;
-        // this.ps.start(); 
-        super.activate();
+
+        this.root.position.copyFrom(pos);
+        this.root.scaling.set(this.size_ratio, this.size_ratio, this.size_ratio);
+        this.ps.emitter = this.root;
+
+        this.ps.manualEmitCount = MANUAL_EMIT_COUNT; //(再)発火
+
+        super.activate(pos, params);
     }
     
     deactivate(){
@@ -108,11 +112,11 @@ export class Effect_Predation extends Effect {
         if (t < 0.4) {
             // 前半：急膨張
             const tt = t / 0.4;
-            scale = BABYLON.Scalar.Lerp(0.1, 1.3, this.ease_out(tt));
+            scale = BABYLON.Scalar.Lerp(0.1, 1.1 * this.size_ratio, this.ease_out(tt));
         } else {
             // 後半：急収縮
             const tt = (t - 0.4) / 0.6;
-            scale = BABYLON.Scalar.Lerp(1.3, 0.0, this.ease_out(tt));
+            scale = BABYLON.Scalar.Lerp(1.1 * this.size_ratio, 0.0, this.ease_out(tt));
         }
         this.core_mesh.scaling.set(scale, scale, scale);
         this.core_mesh.material.alpha = BABYLON.Scalar.Lerp(0.8, 0.0, e);
@@ -123,6 +127,9 @@ export class Effect_Predation extends Effect {
 
     update(time, delta){
         this.update_core(delta);
+        if (this.ps.getActiveCount() === 0){
+            this.alive = false;
+        }
         super.update(time, delta);
     }
 

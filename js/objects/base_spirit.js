@@ -2,6 +2,12 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Collidable } from "./base_collidable.js";
+import { Attachment_Tentacle} from "./attachment_tentacle.js";
+import { Attachment_Spine} from "./attachment_spine.js";
+import { Attachment_Tail} from "./attachment_tail.js";
+import { Attachment_Eye} from "./attachment_eye.js";
+import { Attachment_Mouth} from "./attachment_mouth.js";
+import { Attachment_Fin} from "./attachment_fin.js";
 
 const FLASH_TIME = 0.15; //秒
 const LOD_THRESHOLD = 9.0;
@@ -12,11 +18,19 @@ const StateColor = {
 
 export class Spirit extends Collidable {
 
-    constructor(scene, class_name, id){
-        super(scene, class_name);
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
 
         this.attachments = [];
-        this.id = id;
+        this.attachment_definitions = [];
+        this.AttachmentClassList = {
+            'Attachment_Eye'       : Attachment_Eye,
+            'Attachment_Fin'       : Attachment_Fin,
+            'Attachment_Mouth'     : Attachment_Mouth,
+            'Attachment_Spine'     : Attachment_Spine,
+            'Attachment_Tail'      : Attachment_Tail,
+            'Attachment_Tentacle'  : Attachment_Tentacle
+        }
 
         this.emissive_materials = [];
         this.base_emissive_color = StateColor.NONE;
@@ -27,37 +41,73 @@ export class Spirit extends Collidable {
         this.hp = this.hp_max;
         this.hp_decrease = 0.1;
 
-        this.predation_socket = null;
         this.predation_position = new BABYLON.Vector3();
         this.predation_radius = 0.2;
         this.predation_classes = [];
 
-        this.prev_LOD = false;
+        this.prev_LOD = false; //1フレーム前のLOD
 
         // [DEBUG] 当たり判定の可視化
         this.debugEllipsoid = null;
     }
 
-    create(){
+    create(params){
+
+        // アタッチメントの定義
+        this.attachment_definitions.length = 0;
+        this._set_attachment_definitions();
+
+        // アタッチメントの定義を実体化
+        for (const def of this.attachment_definitions){
+            const socket = this.get_socket(this.mesh, def.socket.front, def.socket.thetaDeg, def.socket.phiDeg);
+            if (socket){
+                const Attachment_Class = this.AttachmentClassList[def.name];
+                //（注）BABYLON.Color3, BABYLON.Vector3 などは structuredClone でプレーンオブジェクトに劣化する
+                if (def.params.color){ //色情報は、BABYLON.Color3オブジェクトに組み立て直す
+                    def.params.color = new BABYLON.Color3(def.params.color.r, def.params.color.g, def.params.color.b);
+                }
+                const attachment = new Attachment_Class(this, socket, def.params);
+                this.attachments.push(attachment);
+            }
+        }
+
+        // ボディの表示用の大きさを調整（アタッチメントを全てくっつけてから）
+        this.mesh.scaling = new BABYLON.Vector3(this.disp_scale, this.disp_scale, this.disp_scale);
+
         // emmisiveColor のある 全マテリアルの収集
+        // clone（個別化）のある マテリアルに限定する
         this.root.getChildMeshes().forEach(m => {
-            if (m.material){
-                m.material = m.material.clone();
+            if (m.material && typeof m.material.clone === "function"){ //cloneの無いmaterialを除外
+                /*
+                const mat = m.material;
+                ['albedoColor', 'emissiveColor', 'reflectivityColor', 'albedoTexture'].forEach(key => {
+                    const val = mat[key];
+                    if (val && typeof val.clone !== 'function') {
+                        console.warn(`clone 不可プロパティ: ${key}`, val);
+                    }
+                });
+                */
+                m.material = m.material.clone(); //キャラクターごとに個別に点滅させるため
                 if (m.material.emissiveColor){
                     this.emissive_materials.push(m.material);
                 }
             }
         });
         
-        super.create();
+        super.create(params);
     }
 
-    activate(pos){
+    _set_attachment_definitions(){
+        // アタッチメントの定義
+        // 継承先でオーバーライド
+    }
+
+    activate(pos, params){
         this.root.setEnabled(true);
         this.root.position.copyFrom(pos);
         this.hp = this.hp_max;
         this.set_alpha(this.base_alpha);
-        super.activate();
+        super.activate(pos, params);
     }
 
     deactivate(){
@@ -91,7 +141,7 @@ export class Spirit extends Collidable {
 
     set_emissive_color(ec, t=0){
         if (ec){
-            this.base_emissive_color = ec;
+            this.base_emissive_color.copyFrom(ec);
         }
         this.emissive_materials.forEach(mat => {
             mat.emissiveColor.set(this.base_emissive_color.r + t, this.base_emissive_color.g + t, this.base_emissive_color.b + t);
@@ -141,8 +191,7 @@ export class Spirit extends Collidable {
             if (this.hp < 0){
                 this.set_dying();
                 // console.log("starvation:", this.class_name);
-                GameState.spawn.activate("Effect_Extinction", 0, this.root.position);
-                // GameState.spawn.activate("Effect_Predation", 0, this.root.position);
+                GameState.spawn.activate("Effect_Extinction", "", this.root.position, { size : this.collisionRadius});
                 GameState.asset.se.extinction.play_3D(this.root.position);
             }
 
@@ -150,12 +199,12 @@ export class Spirit extends Collidable {
             this.environment_velocity = GameState.player.get_environment_velocity(this.root.position);
 
             // 捕食座標の更新
-            if (this.predation_socket){
+            if (this.predation){
                 // ソケット位置を親（this.mesh） のワールド行列でワールド空間に変換
-                const worldMatrix = this.mesh.getWorldMatrix();
-                this.predation_position = BABYLON.Vector3.TransformCoordinates(
-                    this.predation_socket.position,
-                    worldMatrix
+                BABYLON.Vector3.TransformCoordinatesToRef(
+                    this.predation_position,
+                    this.mesh.getWorldMatrix(),
+                    this.predation_position
                 );
             }
 

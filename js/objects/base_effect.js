@@ -3,16 +3,16 @@ import { Drawable } from "./base_drawable.js";
 
 export class Effect extends Drawable {
 
-    constructor(scene, class_name){
-        super(scene, class_name);
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
     }
 
-    create(mesh){
-        super.create();
+    create(params){
+        super.create(params);
     }
 
-    activate(){
-        super.activate();
+    activate(pos, params){
+        super.activate(pos, params);
     }
 
     deactivate(){

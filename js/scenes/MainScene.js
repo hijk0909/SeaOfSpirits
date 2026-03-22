@@ -138,7 +138,6 @@ export class MainScene extends Scene {
                 GameState.spawn.activate("Spirit_Shark", i, pos);
             }
 
-/*
             for(let i=0; i<1; i++){
                 const pos = new BABYLON.Vector3(
                     Math.random()*8 - 4,
@@ -147,8 +146,7 @@ export class MainScene extends Scene {
                 );
                 GameState.spawn.activate("Spirit_Whale", i, pos);
             }
-*/
-/*
+
             for(let i=0; i<10; i++){
                 const pos = new BABYLON.Vector3(
                     Math.random()*10 - 5,
@@ -166,7 +164,6 @@ export class MainScene extends Scene {
                 );
                 GameState.spawn.activate("Spirit_Jelly", i, pos);
             }
-*/
 
             // [STATUS_MSG]
             GameState.ui_manager.show_status_message(`GET READY`);

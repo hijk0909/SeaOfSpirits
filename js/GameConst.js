@@ -2,8 +2,8 @@
 
 export const GLOBALS = {
 
-    VERSION : "0.3",
-    DATE : "2026.3.21",
+    VERSION : "0.3a",
+    DATE : "2026.3.22",
 
     DELTA : 16.6667,
     ZERO_VECTOR : BABYLON.Vector3.Zero(),
@@ -28,11 +28,11 @@ export const GLOBALS = {
     },
 
     COLLIDABLE : {
-        IMPULSE_VELOCITY_RATIO : 0.6,
+        IMPULSE_VELOCITY_RATIO : 2.6,
         CONTROL_LOSS_THRESHOLD : 0.1,
         MAX_EXTERNAL_VELOCITY : 0.5,
-        OVERLAP_REPULSION_COEFFICIENT : 0.6,
-        MAX_REPULSE_VELOCITY : 0.2
+        OVERLAP_REPULSION_COEFFICIENT : 0.2,
+        MAX_REPULSE_VELOCITY : 0.6
     },
 
 }

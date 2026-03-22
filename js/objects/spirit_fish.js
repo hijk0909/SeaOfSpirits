@@ -2,16 +2,12 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
-import { Attachment_Tentacle} from "./attachment_tentacle.js";
-import { Attachment_Spine} from "./attachment_spine.js";
-import { Attachment_Tail} from "./attachment_tail.js";
-import { Attachment_Eye} from "./attachment_eye.js";
 
 // 魚
 export class Spirit_Fish extends Spirit {
 
-    constructor(scene, class_name, id){
-        super(scene, class_name, id);
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
 
         this.disp_scale = 1.0;
         this.collisionRadius = 0.30;
@@ -36,10 +32,9 @@ export class Spirit_Fish extends Spirit {
         this.tmpDiff = new BABYLON.Vector3();
     }
 
-    create(type=null){
+    create(params){
 
-        // this.root.position = position.clone();
-
+        // ◆ボディの作成
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -57,70 +52,57 @@ export class Spirit_Fish extends Spirit {
         this.mesh.material = mat;
 
         this.mesh.computeWorldMatrix(true);
-        let socket;
-        let attachment;
 
-        // ****************************************************
-        socket = this.get_socket(this.mesh, 0.0, 0, 0);
-        if (socket){
-            this.predation_socket = socket;
-            this.predation_radius = 0.5;
-            this.predation_classes = ["Spirit_Plankton"];
-        }
+        // ◆捕食口の設定
+        this.predation_classes = ["Spirit_Fish"];
+        const predation_socket = this.get_socket(this.mesh, 0.0, -5, 0);
+        this.predation_position = predation_socket.position;
+        this.predation_radius = 1.2;
 
-        socket = this.get_socket(this.mesh, -0.1, 90, 0);
-        if (socket){
-            attachment = new Attachment_Tentacle(this, socket, {segmentCont : 4, length : 0.25});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, -0.1, -90, 0);
-        if (socket){
-            attachment = new Attachment_Tentacle(this, socket, {segmentCont : 4, length : 0.25});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, -0.2, -45, +90);
-        if (socket){
-            attachment = new Attachment_Spine(this, socket, {diameterBottom : 0.2, height :0.45});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, -0.2, -45, -90);
-        if (socket){
-            attachment = new Attachment_Spine(this, socket, {diameterBottom : 0.2, height :0.45});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, 0.0, 15, 180);
-        if (socket){
-            attachment = new Attachment_Tail(this, socket, {scale : 1.0});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, 0.3, 45, -90);
-        if (socket){
-            attachment = new Attachment_Eye(this, socket, {scale : 1.0});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, 0.3, 45, +90);
-        if (socket){
-            attachment = new Attachment_Eye(this, socket, {scale : 1.0});
-            this.attachments.push(attachment);
-        }
-
-        // ****************************************************
-        // アタッチメントを全てくっつけてから本体の表示用の大きさを調整
-        this.mesh.scaling = new BABYLON.Vector3(this.disp_scale, this.disp_scale, this.disp_scale);
-
-        super.create(type);
-
-        // console.log("Spirit_1:this.root.position", this.id, this.root.position, this.mesh.position);
+        super.create(params);
     }
 
-    activate(pos){
-        super.activate(pos);
+    _set_attachment_definitions(){
+
+        let def;
+
+        def = {
+            name: "Attachment_Tentacle",
+            socket: {front:-0.1, thetaDeg:90, phiDeg:0},
+            params: {segmentCont : 4, length : 0.25}
+        };
+        this.attachment_definitions.push(structuredClone(def));
+        def.socket.thetaDeg *= -1;
+        this.attachment_definitions.push(structuredClone(def));
+
+        def = {
+            name: "Attachment_Spine",
+            socket: {front:-0.2, thetaDeg:-45, phiDeg: +90},
+            params: {diameterBottom : 0.2, height :0.45}
+        };
+        this.attachment_definitions.push(structuredClone(def));
+        def.socket.phiDeg *= -1;
+        this.attachment_definitions.push(structuredClone(def));
+
+        def ={
+            name: "Attachment_Tail",
+            socket: {front:0.0, thetaDeg:15, phiDeg: 180},
+            params:  {scale : 1.0}
+        };
+        this.attachment_definitions.push(structuredClone(def));
+
+        def ={
+            name: "Attachment_Eye",
+            socket: {front:0.3, thetaDeg:45, phiDeg: -90},
+            params:  {scale : 1.0}
+        };
+        this.attachment_definitions.push(structuredClone(def));
+        def.socket.phiDeg *= -1;
+        this.attachment_definitions.push(structuredClone(def));
+    }
+
+    activate(pos, params){
+        super.activate(pos, params);
     }
 
     deactivate(){
@@ -163,7 +145,7 @@ export class Spirit_Fish extends Spirit {
                 this.root.position.subtractToRef(other.root.position, this.tmpDiff);
                 let t = (this.separationRadius - dist) / this.separationRadius;
                 let strength = t * t;
-                this.tmpDiff.normalizeToRef(this.tmpDiff);
+                this.tmpDiff.normalize();
                 this.tmpDiff.scaleInPlace(strength);
                 this.tmpSeparation.addInPlace(this.tmpDiff);
             }

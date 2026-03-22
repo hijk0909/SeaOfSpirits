@@ -3,6 +3,9 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
+const DEFAULT_COLOR_LIP = new BABYLON.Color3(1.0, 0.0, 0.0);
+const DEFAULT_COLOR_TOOTH = new BABYLON.Color3(1.0, 1.0, 1.0);
+
 export class Attachment_Mouth extends Attachment{
 
     constructor(spirit, socket, parameters){
@@ -22,12 +25,12 @@ export class Attachment_Mouth extends Attachment{
         this.root_lower_position_base = this.root_lower.position;
         this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, +45);
 
-        this.create_lip(this.root_upper, {alpha:alpha});
-        this.create_lip(this.root_lower, {alpha:alpha});
+        this.create_lip(this.root_upper, parameters);
+        this.create_lip(this.root_lower, parameters);
 
         if (this.hasTeeth){
-            this.create_teeth(this.root_upper, true, 8, {alpha:alpha});
-            this.create_teeth(this.root_lower, false, 8, {alpha:alpha});
+            this.create_teeth(this.root_upper, true, 8, parameters);
+            this.create_teeth(this.root_lower, false, 8, parameters);
         }
     }
 
@@ -60,7 +63,7 @@ export class Attachment_Mouth extends Attachment{
     */
     create_lip(root, parameters = {}) {
 
-        const {R=2.0, R_ratio = 0.2, Z_bend = 5.0, Z_offset = 0.15, alpha = 1.0} = parameters;
+        const {R=2.0, R_ratio = 0.2, Z_bend = 5.0, Z_offset = 0.15, alpha = 1.0, color = DEFAULT_COLOR_LIP} = parameters;
 
         const sphere = BABYLON.MeshBuilder.CreateSphere("lipSphere", { diameter: R, segments: 32, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene);
         sphere.checkCollisions = false;
@@ -115,7 +118,7 @@ export class Attachment_Mouth extends Attachment{
 
         // マテリアル
         const mat = new BABYLON.PBRMaterial("lipMat", this.scene);
-        mat.albedoColor = new BABYLON.Color3(1.0, 0.0, 0.0);
+        mat.albedoColor = color;
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = alpha;
@@ -127,7 +130,7 @@ export class Attachment_Mouth extends Attachment{
         return sphere;
     }
 
-    create_tooth(position, diameterBottom, height, upper, alpha=1.0) {
+    create_tooth(position, diameterBottom, height, upper, alpha=1.0, color=DEFAULT_COLOR_TOOTH) {
 
         let dt, db, p;
         if (!upper){
@@ -158,7 +161,7 @@ export class Attachment_Mouth extends Attachment{
     }
 
     create_teeth(root, upper, num_teeth, parameters = {}){
-        const {diameterBottom=0.3, height=0.7, R=2.0, Z_bend = 5.0, Z_offset = 0.10, alpha = 1.0} = parameters;
+        const {diameterBottom=0.3, height=0.7, R=2.0, Z_bend = 5.0, Z_offset = 0.10, alpha = 1.0, color = DEFAULT_COLOR_TOOTH} = parameters;
         let startAngleDeg, endAngleDeg;
         const maxAngleDeg = 25;
         const stepAngleDeg = maxAngleDeg / (num_teeth / 2);
@@ -173,7 +176,7 @@ export class Attachment_Mouth extends Attachment{
             const angleRad = BABYLON.Tools.ToRadians(angleDeg);
             const position = new BABYLON.Vector3( R * Math.sin(angleRad), 0, Z_bend * (Math.cos(angleRad) - 1)+ Z_offset);
             const scale = ((maxAngleDeg - Math.abs(angleDeg) )/ maxAngleDeg) * 0.6 + 0.4;
-            const tooth = this.create_tooth(position, diameterBottom * scale, height * scale, upper, alpha);
+            const tooth = this.create_tooth(position, diameterBottom * scale, height * scale, upper, alpha, color);
             tooth.parent = root;
         }
     }

@@ -2,18 +2,17 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
-import { Attachment_Spine} from "./attachment_spine.js";
 
 // プランクトン
 export class Spirit_Plankton extends Spirit {
 
-    constructor(scene, class_name, id){
-        super(scene, class_name, id);
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
 
         this.disp_scale = 0.4;
         this.isCollidable = false;
-        // this.collisionRadius = 0.20;
-        // this.mass = 0.5;
+        this.collisionRadius = 0.20;
+        this.mass = 0.5;
 
         this.hp_max = 10;
         this.hp = this.hp_max;
@@ -22,10 +21,9 @@ export class Spirit_Plankton extends Spirit {
         this.num_spines = 13;
     }
 
-    create(type=null){
+    create(params){
 
-        // this.root.position = position.clone();
-
+        // ◆ボディの作成
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameter: 0.5, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -41,31 +39,24 @@ export class Spirit_Plankton extends Spirit {
         this.mesh.material = mat;
 
         this.mesh.computeWorldMatrix(true);
-        let socket;
-        let attachment;
 
-        // ****************************************************
-
-        for ( let i = 0 ; i < this.num_spines ; i++){
-            const {theta, phi} = this.get_golden_spiral_angles(this.num_spines, i);
-            socket = this.get_socket(this.mesh, 0.0, phi, theta);
-            if (socket){
-                attachment = new Attachment_Spine(this, socket, {diameterBottom : 0.1, height: 0.15});
-                this.attachments.push(attachment);                
-            }
-        }
-
-        // ****************************************************
-        // 子meshを全てくっつけてから表示用の大きさを調整
-        this.mesh.scaling = new BABYLON.Vector3(this.disp_scale, this.disp_scale, this.disp_scale);
-
-        super.create(type);
-
-        // console.log("Spirit_1:this.root.position", this.id, this.root.position, this.mesh.position);
+        super.create(params);
     }
 
-    activate(pos){
-        super.activate(pos);
+    _set_attachment_definitions(){
+        let def = {
+            name: "Attachment_Spine",
+            params: {diameterBottom : 0.1, height: 0.15}
+        }
+        for ( let i = 0 ; i < this.num_spines ; i++){
+            const {theta, phi} = this.get_golden_spiral_angles(this.num_spines, i);
+            def.socket = {front:0.0, thetaDeg : phi, phiDeg : theta};
+            this.attachment_definitions.push(structuredClone(def));
+        }
+    }
+
+    activate(pos, params){
+        super.activate(pos, params);
     }
 
     deactivate(){

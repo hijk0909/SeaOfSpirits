@@ -4,20 +4,20 @@ const DYING_TIME = 2.0; //秒
 
 export class Drawable {
 
-    constructor(scene, class_name = ""){
+    constructor(scene, class_name = "", type_name = ""){
         this.scene = scene;
         this.class_name = class_name;
+        this.type_name = type_name;
         this.root = new BABYLON.TransformNode("Root");
         this.mesh = null;
         this.alive = true;
         this.dying = false;
         this.dying_count = DYING_TIME;
         this.dying_ratio = 1.0;  // 1.0 → 0.0
-
-        this.id = 0;
     }
 
-    create(){
+    create(params){
+        this.params = params;
     }
 
     isAlive(){
@@ -29,7 +29,8 @@ export class Drawable {
         this.dying_count = DYING_TIME;
     }
 
-    activate(){
+    activate(pos, params){
+        this.params = params;
         this.alive = true;
         this.dying = false;
     }

@@ -14,7 +14,7 @@ export class Exec {
         this.period_plankton = 1000;
         this.count_plankton = this.period_plankton;
 
-        this.max_virus = 100;
+        this.max_virus = 30;
         this.period_virus = 1130;
         this.count_virus = this.period_virus;
 
@@ -167,7 +167,7 @@ export class Exec {
 
                     obj1.hp = Math.min(obj1.hp_max, obj1.hp + obj2.hp); //[TEST] 捕食相手のHPを取得
 
-                    GameState.spawn.activate("Effect_Predation", 0, obj2.root.position);
+                    GameState.spawn.activate("Effect_Predation", "", obj2.root.position, {size : obj2.collisionRadius});
                     GameState.asset.se.predation.play_3D(obj2.root.position);
 
                     // [TEST]
@@ -176,7 +176,7 @@ export class Exec {
             }
         }
 
-        // エフェクトの管理
+        // ◆エフェクトの管理
         for (let i = GameState.effects.length - 1; i >= 0; i--) {
             const effect = GameState.effects[i];
 
@@ -189,13 +189,7 @@ export class Exec {
         }
 
     } // End of update
-/*
-    // 汎用の当たり判定
-    check_hit(pos1, rad1, pos2, rad2){
-        const distance = BABYLON.Vector3.Distance(pos1, pos2);
-        return (distance < rad1 + rad2);
-    }
-*/
+
     // Spiritsクラス間の当たり判定
     check_predation(predator, prey){
 
@@ -235,19 +229,19 @@ export class Exec {
             }
 
             // 重なり解決（速度ベクトル更新）(重なりが大きいほど強く反発)
-            const overlap = radius_sum - Math.sqrt(distSq);
-            const overlap_repulsion = this.tmpNormal.scale(overlap * GLOBALS.COLLIDABLE.OVERLAP_REPULSION_COEFFICIENT); // overlap比例の反発係数
-            obj1.add_overlap_impulse(overlap_repulsion.scale(-1));
-            obj2.add_overlap_impulse(overlap_repulsion);
+            // const overlap = radius_sum - Math.sqrt(distSq);
+            // const overlap_repulsion = this.tmpNormal.scale(overlap * GLOBALS.COLLIDABLE.OVERLAP_REPULSION_COEFFICIENT); // overlap比例の反発係数
+            // obj1.add_overlap_impulse(overlap_repulsion);
+            // obj2.add_overlap_impulse(overlap_repulsion.scale(-1) );
             // if (overlap_repulsion.length() > 0.15){ console.log("repulsin:", overlap_repulsion.length()); }
 
             // 運動量を交換 (velocity_relative は obj1 から見た obj2 の相対速度)
             const velocity_relative = obj2.velocity.clone().subtract(obj1.velocity);
             const dot = BABYLON.Vector3.Dot(velocity_relative, this.tmpNormal);
             const e = 0.3;    //e=1.0:完全弾性、e=0.0:完全非弾性
-            impulse = this.tmpNormal.scale(-(1+e) * dot / (1/obj1.mass + 1/obj2.mass));
-            obj1.add_impulse( impulse.scale(-1));
-            obj2.add_impulse( impulse );
+            impulse = this.tmpNormal.scale((1+e) * dot / (1/obj1.mass + 1/obj2.mass));
+            obj1.add_impulse( impulse);
+            obj2.add_impulse( impulse.scale(-1) );
 
             obj1.collided = true;
             obj2.collided = true;

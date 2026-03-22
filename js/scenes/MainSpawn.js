@@ -24,7 +24,7 @@ export class Spawn {
             spirit_virus : [],
             effect_extinction : [],
             effect_predation : []
-        }
+        };
 
         this.ClassList = {
             'Spirit_Fish'       : {class : Spirit_Fish,         pool : this.pool.spirit_fish,        list:GameState.spirits}, 
@@ -38,18 +38,20 @@ export class Spawn {
         }
     }
 
-    activate(class_name, id, pos, type=""){
+    activate(class_name, type_name, pos, params = null){
         const {class : Class, pool : pool, list : list} = this.ClassList[class_name];
+
         let object;
-        if (pool.length > 0){
-            object = pool.pop();
-            // console.log("activate reuse:",class_name, pool.length);
+        const index = pool.findIndex(obj => obj.type_name === type_name);
+        if ( index !== -1 ){
+            object = pool.splice(index, 1)[0];
+            // console.log("[SPAWN] activate REUSE:",class_name, " - ", type_name, " length:", pool.length, list.length);
         } else {
-            object = new Class(this.scene, class_name, id);
-            object.create(type);
-            // console.log("activate new:",class_name);
+            object = new Class(this.scene, class_name, type_name);
+            object.create(params);
+            // console.log("[SPAWN] activate NEW:",class_name, " - ", type_name, " length:", pool.length, list.length);
         }
-        object.activate(pos);
+        object.activate(pos, params);
         list.push(object);
         return object;
     }
@@ -59,7 +61,7 @@ export class Spawn {
         const class_name = object.class_name;
         const {pool : pool} = this.ClassList[class_name];
         pool.push(object);
-        // console.log("deactivate:", class_name, pool.length);
+        // console.log("[SPAWN] deactivate:", class_name, pool.length);
     }
 
     dispose(){

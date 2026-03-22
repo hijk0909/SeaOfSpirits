@@ -3,20 +3,22 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
+const DEFAULT_COLOR = new BABYLON.Color3(0.8, 1.0, 0.0);
+
 export class Attachment_Fin extends Attachment{
 
     constructor(spirit, socket, parameters){
         super(spirit, socket);
 
         const { position: fp, normal: fn } = socket;
-        const { bottomScale=1.0, height=1.0, alpha=1.0} = parameters;
+        const { bottomScale=1.0, height=1.0, alpha=1.0, color=DEFAULT_COLOR} = parameters;
 
         // 頂点座標
         const positions = [
-            [-0.2,  0,   0],   // 0: bottom A
-            [ 0.1,  0.1, 0],   // 1: bottom B
-            [ 0.1, -0.1, 0],   // 2: bottom C
-            [   0,  0,   0.5]    // 3: top apex
+            [-0.05, -0.4, 0],   // 0: bottom A
+            [+0.05, -0.4, 0],   // 1: bottom B
+            [ 0.0,  +0.4,  0],   // 2: bottom C
+            [ 0.0,   0.0, +0.7]  // 3: top apex
         ];
 
         // 面（頂点インデックスの配列）
@@ -35,11 +37,11 @@ export class Attachment_Fin extends Attachment{
         mesh.scaling = new BABYLON.Vector3(bottomScale, bottomScale, height);
         mesh.rotationQuaternion = BABYLON.Quaternion.FromLookDirectionLH(
             fn,
-            BABYLON.Axis.Y
+            BABYLON.Axis.Z
         );
 
         const mat = new BABYLON.PBRMaterial("finMat", this.scene);
-        mat.albedoColor = new BABYLON.Color3(0.8, 1.0, 1.0);
+        mat.albedoColor = color;
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = alpha;
