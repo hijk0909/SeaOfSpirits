@@ -1,6 +1,6 @@
 // base_drawable.js
 
-const DYING_TIME = 2.0; //秒
+const DYING_TIME = 1.2; //秒
 
 export class Drawable {
 
@@ -14,14 +14,6 @@ export class Drawable {
         this.dying = false;
         this.dying_count = DYING_TIME;
         this.dying_ratio = 1.0;  // 1.0 → 0.0
-    }
-
-    create(params){
-        this.params = params;
-    }
-
-    isAlive(){
-        return this.alive;
     }
 
     set_dying(){

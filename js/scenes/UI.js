@@ -59,6 +59,7 @@ export class UI {
         this.stat_plankton = _createTextBlock(panel, "PLANKTON:", "green");
         this.stat_fish = _createTextBlock(panel, "FISH:", "white");
         this.stat_jelly = _createTextBlock(panel, "JELLY:", "white");
+        this.stat_squid = _createTextBlock(panel, "SQUID:", "white");
         this.stat_shark = _createTextBlock(panel, "SHARK:", "white");
         this.stat_whale = _createTextBlock(panel, "WHALE:", "white");
         this.stat_elapsed = _createTextBlock(panel, "ELAPSED:", "cyan");
@@ -105,6 +106,7 @@ export class UI {
         this.stat_plankton.text = `Plankton: ${this._stat_text("Spirit_Plankton")}`;
         this.stat_fish.text = `Fish: ${this._stat_text("Spirit_Fish")}`;
         this.stat_jelly.text = `Jelly: ${this._stat_text("Spirit_Jelly")}`;
+        this.stat_squid.text = `Squid: ${this._stat_text("Spirit_Squid")}`;
         this.stat_shark.text = `Shark: ${this._stat_text("Spirit_Shark")}`;
         this.stat_whale.text = `Whale: ${this._stat_text("Spirit_Whale")}`;
 

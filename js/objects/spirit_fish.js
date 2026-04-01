@@ -9,20 +9,26 @@ export class Spirit_Fish extends Spirit {
     constructor(scene, class_name, type_name){
         super(scene, class_name, type_name);
 
-        this.disp_scale = 1.0;
-        this.collisionRadius = 0.30;
-        this.isCollidable = true;
-        this.mass = 1.0;
+        // クラス遺伝子
+        this.genome.hp_max = 30;
+        this.genome.hp_decrease = 0.005;
+        this.genome.collision_radius = 0.30;
+        this.genome.mass = 1.0;
+        this.genome.speed = 0.06;
+        this.genome.accel = 0.11;
+        this.genome.rotate_speed = 3.0;
+        this.genome.disp_scale = 1.0;
+        this.genome.predation_classes = ["Spirit_Plankton"];
+        this.genome.predation_socket = {front : 0.0, theta : 0.0 , phi : 0.0};
+        this.genome.predation_radius = 1.2;
 
-        this.hp_max = 20;
-        this.hp = this.hp_max;
-        this.hp_decrease = 0.01;
-
+        // クラス固有のパラメータ
         this.perceptionRadius = 4.0;
         this.separationRadius = 3.0;
-        this.max_control_velocity = 0.12;
+        this.base_color = new BABYLON.Color3();
+        this.eye_emissive = new BABYLON.Color3();
 
-        // Boids計算用テンポラリ変数
+        // テンポラリ変数
         this.tmpSeparation = new BABYLON.Vector3();
         this.tmpAlignment = new BABYLON.Vector3();
         this.tmpCohesion = new BABYLON.Vector3();
@@ -30,11 +36,25 @@ export class Spirit_Fish extends Spirit {
         this.tmpVec = new BABYLON.Vector3();
         this.tmpOffset = new BABYLON.Vector3();
         this.tmpDiff = new BABYLON.Vector3();
+        this.tmp_matrix = new BABYLON.Matrix();
+        this.tmp_deltaQuaternion = new BABYLON.Quaternion();
     }
 
     create(params){
 
-        // ◆ボディの作成
+        const speed_ratio = params?.speed ?? 1.0;
+        if (speed_ratio > 1.0){
+            this.base_color.copyFromFloats(1.0, 0.6, 0.2);
+        } else {
+            this.base_color.copyFromFloats(0.3, 0.5, 1.0);
+        }
+
+        this.eye_emissive.copyFromFloats(3.0, 5.0, 1.0);
+
+        super.create(params);
+    }
+
+    _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -45,21 +65,15 @@ export class Spirit_Fish extends Spirit {
         this.transform_to_streamline(this.mesh);
 
         const mat = new BABYLON.PBRMaterial("material", this.scene); 
-        mat.albedoColor = new BABYLON.Color3(1, 0.5, 0.3);
+        // mat.albedoColor.copyFrom(this.base_color);
+        mat.albedoTexture = this.get_stripe_texture("#ffff00","#ff8000",10,1);
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
+        // mat.fillMode = BABYLON.Material.WireFrameFillMode;
+        // mat.unlit = true;
+
         this.mesh.material = mat;
-
-        this.mesh.computeWorldMatrix(true);
-
-        // ◆捕食口の設定
-        this.predation_classes = ["Spirit_Fish"];
-        const predation_socket = this.get_socket(this.mesh, 0.0, -5, 0);
-        this.predation_position = predation_socket.position;
-        this.predation_radius = 1.2;
-
-        super.create(params);
     }
 
     _set_attachment_definitions(){
@@ -94,19 +108,11 @@ export class Spirit_Fish extends Spirit {
         def ={
             name: "Attachment_Eye",
             socket: {front:0.3, thetaDeg:45, phiDeg: -90},
-            params:  {scale : 1.0}
+            params:  {scale : 1.0, emissive : this.eye_emissive}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
         this.attachment_definitions.push(structuredClone(def));
-    }
-
-    activate(pos, params){
-        super.activate(pos, params);
-    }
-
-    deactivate(){
-        super.deactivate();
     }
 
     transform_to_streamline(mesh){
@@ -121,6 +127,14 @@ export class Spirit_Fish extends Spirit {
             positions[i+1] *= taper;
         }
         mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+    }
+
+    activate(pos, params){
+        super.activate(pos, params);
+    }
+
+    deactivate(){
+        super.deactivate();
     }
 
     update(time, delta){
@@ -182,14 +196,15 @@ export class Spirit_Fish extends Spirit {
         this.tmpVec.scaleInPlace(-0.003); //グローバル座標の中心に向かう
         this.tmpAccel.addInPlace(this.tmpVec);
 
-        this.tmpAccel.scaleInPlace(0.11); //加速度の調整
+        this.tmpAccel.scaleInPlace(this.genome.accel); //加速度の調整
         this.control_velocity.addInPlace(this.tmpAccel);
 
-        if (this.control_velocity.length() > this.max_control_velocity){
-            this.control_velocity = this.control_velocity.normalize().scale(this.max_control_velocity);
+        if (this.control_velocity.length() > this.genome.speed){
+            this.control_velocity = this.control_velocity.normalize()
+            this.control_velocity.scaleInPlace(this.genome.speed);
         }
 
-        this.rotate_to(this.control_velocity, delta);
+        this.look_at(this.control_velocity, delta);
 
         super.update(time, delta);
     }

@@ -29,8 +29,16 @@ export class Collidable extends Drawable {
         this.environment_velocity = new BABYLON.Vector3();
         this.velocity = new BABYLON.Vector3();
 
-        this.max_speed = 1.0;
-        this.rotate_speed = 0.8;
+        this.max_speed = 0.1;
+        this.rotate_speed = 1.0;
+
+        this.last_direction = new BABYLON.Vector3();
+        this.tmp_targetDir = new BABYLON.Vector3();
+        this.tmp_targetQuaternion = new BABYLON.Quaternion();
+        this.tmp_matrix = new BABYLON.Matrix();
+        this.tmp_xAxis = new BABYLON.Vector3();
+        this.tmp_yAxis = new BABYLON.Vector3();
+        this.tmp_zAxis = new BABYLON.Vector3();
     }
 
     get_up_vector(){
@@ -42,85 +50,106 @@ export class Collidable extends Drawable {
 
     add_impulse(impulse){
         this.external_velocity.addInPlace(impulse.scale(1/this.mass * GLOBALS.COLLIDABLE.IMPULSE_VELOCITY_RATIO));
-        if (this.external_velocity.length() > GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY){
-            this.external_velocity.normalize();
-            this.external_velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY);
-        }
-    }
-
-    add_overlap_impulse(impulse) {
-        // console.log("overlap_impulse:", impulse.length());
-/*
-        // 反発に微小なランダム回転を加える（5度〜10度の範囲）
-        // 物理的なデッドロック（振動）を崩すために、Y軸（上方向）を軸に少し回転
-        const randomAngle = (Math.random() * 10 + 5) * (Math.PI / 180);
-        const sign = Math.random() > 0.5 ? 1 : -1;
-        
-        // 回転用クォータニオンの作成
-        const rotation = BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Y, randomAngle * sign);
-        rotation.toRotationMatrix(TMP_MATRIX);
-        // impulseをコピーして回転を適用
-        const jitteredImpulse = new BABYLON.Vector3(); 
-        BABYLON.Vector3.TransformNormalToRef(impulse, TMP_MATRIX, jitteredImpulse);
-
-        // 加工したベクトルを加算
-        this.repulse_velocity.addInPlace(jitteredImpulse);
-*/
-        this.repulse_velocity.copyFrom(impulse);
-
-        if (this.repulse_velocity.length() > GLOBALS.COLLIDABLE.MAX_REPULSE_VELOCITY) {
-            this.repulse_velocity.normalize();
-            this.repulse_velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_REPULSE_VELOCITY);
-        }
     }
 
     rotate_towards(targetPosition, delta){
 
-        // ターゲット方向ベクトルを取得
-        const currentPosition = this.root.position;
-        const targetDir = targetPosition.subtract(currentPosition).normalize();
+        // ターゲット方向ベクトル
+        this.tmp_targetDir.copyFrom(targetPosition);
+        this.tmp_targetDir.subtractInPlace(this.root.position);
+        this.tmp_targetDir.normalize();
+
         // メッシュのローカルZ軸 (this.forward) を targetDir に向ける回転を計算
-        const targetQuaternion = new BABYLON.Quaternion();
         BABYLON.Quaternion.FromUnitVectorsToRef(
             BABYLON.Axis.Z, 
-            targetDir, 
-            targetQuaternion
+            this.tmp_targetDir,
+            this.tmp_targetQuaternion
         );
-        // console.log("rotate:",targetPosition, this.root.position, targetQuaternion, this.root.rotationQuaternion);
-        // 球面線形補間で滑らかに回転
+        // 球面線形補間
         BABYLON.Quaternion.SlerpToRef(
             this.root.rotationQuaternion,       // 現在の回転
-            targetQuaternion,                   // 目標の回転
+            this.tmp_targetQuaternion,          // 目標の回転
             0.8 * delta / 1000,                 // 補間率（値が小さいほど滑らかで遅い）
             this.root.rotationQuaternion        // 結果をメッシュのクォータニオンに書き込み
         );
     }
 
-    rotate_to(targetVec, delta){
+    rotate_to(targetVec, delta) {
+        if (targetVec.lengthSquared() < 0.00001) return;
 
-        const targetDir = targetVec.clone().normalize();
-        // メッシュのローカルZ軸 (this.forward) を targetDir に向ける回転を計算
-        const targetQuaternion = new BABYLON.Quaternion();
-        BABYLON.Quaternion.FromUnitVectorsToRef(
-            BABYLON.Axis.Z, 
-            targetDir,
-            targetQuaternion
+        // ターゲットの方向ベクトル
+        this.tmp_targetDir.copyFrom(targetVec);
+        this.tmp_targetDir.normalize();
+        this.tmp_zAxis.copyFrom(this.tmp_targetDir);
+
+        // ローカルY軸をワールドY軸に近づけるようにグラムシュミット
+        const worldY = BABYLON.Axis.Y;
+        const dot = BABYLON.Vector3.Dot(this.tmp_zAxis, worldY);
+        if (Math.abs(dot) < 0.99) {
+            this.tmp_zAxis.scaleToRef(dot, this.tmp_yAxis);
+            worldY.subtractToRef(this.tmp_yAxis, this.tmp_yAxis);
+            this.tmp_yAxis.normalize();
+        } else {
+            const worldZ = BABYLON.Axis.Z;
+            const dot2 = BABYLON.Vector3.Dot(this.tmp_zAxis, worldZ);
+            this.tmp_zAxis.scaleToRef(dot2, this.tmp_yAxis);
+            worldZ.subtractToRef(this.tmp_yAxis, this.tmp_yAxis);
+            this.tmp_yAxis.normalize();
+        }
+
+        // 外積で xAxis を決定
+        BABYLON.Vector3.CrossToRef(this.tmp_yAxis, this.tmp_zAxis, this.tmp_xAxis);
+        this.tmp_xAxis.normalize();
+
+        // 目標クォータニオンを構築
+        BABYLON.Quaternion.RotationQuaternionFromAxisToRef(
+            this.tmp_xAxis, this.tmp_yAxis, this.tmp_zAxis,
+            this.tmp_targetQuaternion
         );
-        // console.log("rotate:",targetPosition, this.root.position, targetQuaternion, this.root.rotationQuaternion);
-        // 球面線形補間で滑らかに回転
+
+        // 球面線形補間
         BABYLON.Quaternion.SlerpToRef(
-            this.root.rotationQuaternion,       // 現在の回転
-            targetQuaternion,                   // 目標の回転
-            this.rotate_speed * delta / 1000,   // 補間率（値が小さいほど滑らかで遅い）
-            this.root.rotationQuaternion        // 結果をメッシュのクォータニオンに書き込み
+            this.root.rotationQuaternion,
+            this.tmp_targetQuaternion,
+            this.rotate_speed * delta / 1000 * (targetVec.length() * 6),
+            this.root.rotationQuaternion
+        );
+    }
+
+    look_at(targetVec, delta) {
+        if (targetVec.lengthSquared() < 0.00001) return;
+
+        // ターゲット方向への回転行列を計算 (LookAt)
+        BABYLON.Matrix.LookAtLHToRef(
+            BABYLON.Vector3.ZeroReadOnly, 
+            targetVec, 
+            BABYLON.Axis.Y, 
+            this.tmp_matrix
+        );
+
+        // 行列を反転し、クォータニオンを抽出、符号を固定（反転防止）
+        this.tmp_matrix.invert();
+        BABYLON.Quaternion.FromRotationMatrixToRef(this.tmp_matrix, this.tmp_targetQuaternion);
+/*
+        if (BABYLON.Quaternion.Dot(this.root.rotationQuaternion, this.tmp_targetQuaternion) < 0) {
+            this.tmp_targetQuaternion.scaleInPlace(-1);
+        }
+*/
+        // 球面線形補間
+        let t = Math.min((this.rotate_speed * delta) / 1000, 1.0);
+        BABYLON.Quaternion.SlerpToRef(
+            this.root.rotationQuaternion,
+            this.tmp_targetQuaternion,
+            t,
+            this.root.rotationQuaternion
         );
     }
 
 
     set_dying(){
         this.isCollidable = false;
-        this.control_velocity = BABYLON.Vector3.Zero();
-        this.external_velocity = BABYLON.Vector3.Zero();
+        this.control_velocity.copyFrom(GLOBALS.ZERO_VECTOR);
+        this.external_velocity.copyFrom(GLOBALS.ZERO_VECTOR);
         super.set_dying();
     }
 
@@ -128,45 +157,49 @@ export class Collidable extends Drawable {
 
         if (!this.dying){
             // 速度の計算
-            const control_ratio = BABYLON.Scalar.Clamp(1 - this.external_velocity.length() / GLOBALS.COLLIDABLE.CONTROL_LOSS_THRESHOLD, 0, 1);
+            // const control_ratio = BABYLON.Scalar.Clamp(1 - this.external_velocity.length() / GLOBALS.COLLIDABLE.CONTROL_LOSS_THRESHOLD, 0, 1);
+
+            // 外部速度の制限
+            if (this.velocity.length() > GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY){
+                this.velocity.normalize();
+                this.velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY);
+            }
 
             this.velocity.copyFrom(this.control_velocity);
-            this.velocity.scaleInPlace(control_ratio);
+            // this.velocity.scaleInPlace(control_ratio);
             this.velocity.addInPlace(this.external_velocity);
-            this.velocity.addInPlace(this.repulse_velocity);
+            // this.velocity.addInPlace(this.repulse_velocity);
             this.velocity.addInPlace(this.environment_velocity);
 
-            // 速度制限とFPS補正
-            if (this.velocity.length > this.max_speed){
-                this.velocity.normalize();
-                this.velocity.scaleInPlace(this.max_speed);
-            }
-            this.velocity.scaleInPlace(Math.min(delta, 33) / GLOBALS.DELTA);
+            // FPS補正
+            this.velocity.scaleInPlace(Math.min(delta, GLOBALS.DELTA_CLAMP) / GLOBALS.DELTA);
 
             // 移動の実行
             this.root.position.addInPlace(this.velocity);
 
             // 外部からの速度の減衰
             this.external_velocity.scaleInPlace(this.external_velocity_damping);
-            this.repulse_velocity.scaleInPlace(this.repulse_velocity_damping);
+            // this.repulse_velocity.scaleInPlace(this.repulse_velocity_damping);
 
-            // 連続衝突の永続回避
-            if (this.collided){
-                this.collision_counter += 2;
-                this.collided = false;
-                if (this.collision_counter > 10){
-                    // console.log("[COL] TOO MANY COLLISIONS");
-                    this.collision_disabled_timer = COLLISION_DISABLED_PERIOD;
-                    this.isCollidable_save = this.isCollidable;
-                    this.isCollidable = false;
-                }
-            } else {
-                this.collision_counter = Math.max(0, this.collision_counter -1);
-            }
+            // ◆連続衝突の一時回避
             if (this.collision_disabled_timer > 0){
                 this.collision_disabled_timer -= delta / 1000;
                 if (this.collision_disabled_timer < 0){
                     this.isCollidable = this.isCollidable || this.isCollidable_save;
+                    console.log("[COL] COLLIDABLE Recover", this.isCollidable);
+                }
+            } else {
+                if (this.collided){
+                    this.collided = false;
+                    this.collision_counter += 2;
+                    if (this.collision_counter > 10){
+                        console.log("[COL] TOO MANY COLLISIONS", this.isCollidable);
+                        this.collision_disabled_timer = COLLISION_DISABLED_PERIOD;
+                        this.isCollidable_save = this.isCollidable;
+                        this.isCollidable = false;
+                    }
+                } else {
+                    this.collision_counter = Math.max(0, this.collision_counter -1);
                 }
             }
         }

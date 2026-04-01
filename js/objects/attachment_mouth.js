@@ -11,19 +11,23 @@ export class Attachment_Mouth extends Attachment{
     constructor(spirit, socket, parameters){
         super(spirit, socket);
 
-        const { hasTeeth = true, biteSpeed = 1.0, alpha = 1.0} = parameters;
+        const { hasTeeth = true, biteSpeed = 1.0, scale = 1.0, alpha = 1.0} = parameters;
         this.hasTeeth = hasTeeth;
         this.biteSpeed = biteSpeed;
+
+        const r = 0.5; //スケール倍率
 
         this.root_upper = this.create_root(socket);
         this.root_upper_rotationQuaternion_base = this.root_upper.rotationQuaternion;
         this.root_upper_position_base = this.root_upper.position;
         this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, -45);
+        this.root_upper.scaling.set(scale * r, scale * r, scale * r);
 
         this.root_lower = this.create_root(socket);
         this.root_lower_rotationQuaternion_base = this.root_lower.rotationQuaternion;
         this.root_lower_position_base = this.root_lower.position;
         this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, +45);
+        this.root_lower.scaling.set(scale * r, scale * r, scale * r);
 
         this.create_lip(this.root_upper, parameters);
         this.create_lip(this.root_lower, parameters);

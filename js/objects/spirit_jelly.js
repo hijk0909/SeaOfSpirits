@@ -2,6 +2,7 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
+import { MyMath } from "../utils/MathUtils.js";
 
 // クラゲ
 export class Spirit_Jelly extends Spirit {
@@ -9,22 +10,28 @@ export class Spirit_Jelly extends Spirit {
     constructor(scene, class_name, type_name){
         super(scene, class_name, type_name);
 
-        this.disp_scale = 1.0;
-        this.collisionRadius = 0.30;
-        this.isCollidable = true;
-        this.mass = 1.0;
+        // クラス遺伝子
+        this.genome.hp_max = 80;
+        this.genome.hp_decrease = 0.026;
+        this.genome.disp_scale = 0.75;
+        this.genome_collision_radius = 0.15;
+        this.genome_is_collidable = true;
+        this.genome.mass = 1.0;
+        this.genome.speed = 0.05;
+        this.genome.predation_classes = ["Spirit_Plankton"];
+        this.genome.predation_socket = {front : 0.0, theta : 0.0 , phi : 0.0};
+        this.genome.predation_radius = 1.0;
 
-        this.hp_max = 80;
-        this.hp = this.hp_max;
-        this.hp_decrease = 0.026;
-
+        // クラス固有のパラメータ
         this.counter = 0;
         this.target = new BABYLON.Vector3(0,0,0);
     }
 
     create(params){
+        super.create(params);
+    }
 
-        // ◆ボディの作成
+    _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "spirit_2_body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -38,67 +45,33 @@ export class Spirit_Jelly extends Spirit {
         mat.albedoColor = new BABYLON.Color3(0.0, 0.5, 1.0);
         mat.metallic = 0.2;
         mat.roughness = 1.0;
-        mat.alpha = 1.0;
         this.mesh.material = mat;
-
-        this.mesh.computeWorldMatrix(true);
-
-        // ◆捕食口の設定
-        this.predation_classes = ["Spirit_Plankton"];
-        const predation_socket = this.get_socket(this.mesh, 0.0, 0, 0);
-        this.predation_position = predation_socket.position;
-        this.predation_radius = 0.5;
-
-/*
-
-
-        socket = this.get_socket(this.mesh, -0.00, 60, 180);
-        if (socket){
-            attachment = new Attachment_Tentacle(this, socket, {segmentCont : 4, length : 0.30, thicknessBase : 0.3, thicknessTip : 0.02});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, -0.00, -60, 180);
-        if (socket){
-            attachment = new Attachment_Tentacle(this, socket, {segmentCont : 4, length : 0.30, thicknessBase : 0.3, thicknessTip : 0.02});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, -0.00, 0, 120);
-        if (socket){
-            attachment = new Attachment_Tentacle(this, socket, {segmentCont : 4, length : 0.30, thicknessBase : 0.3, thicknessTip : 0.02});
-            this.attachments.push(attachment);
-        }
-
-        socket = this.get_socket(this.mesh, -0.00, 0, -120);
-        if (socket){
-            attachment = new Attachment_Tentacle(this, socket, {segmentCont : 4, length : 0.30, thicknessBase : 0.3, thicknessTip : 0.02});
-            this.attachments.push(attachment);
-        }
-
-*/
-        super.create(params);
     }
 
-    _set_attachment_definitions(){
+    _set_attachment_definitions(genome){
 
         let def;
 
         def = {
             name: "Attachment_Tentacle",
-            socket: {front: 0.0, thetaDeg:60, phiDeg:180},
             params: {segmentCont : 4, length : 0.30, thicknessBase : 0.3, thicknessTip : 0.02}
         };
-        this.attachment_definitions.push(structuredClone(def));
+        for (let i = 0; i < 360; i += 90){
+            const {theta, phi} = MyMath.rotate_to_front(-30, i);
+            def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
+            this.attachment_definitions.push(structuredClone(def));
+        }
 
-        def.socket = {front: 0.0, thetaDeg:-60, phiDeg:180};
-        this.attachment_definitions.push(structuredClone(def));
+        def = {
+            name: "Attachment_Spine",
+            params: {diameterBottom : 0.15, height :0.24}
+        };
+        for (let i = 0; i < 360; i += 120){
+            const {theta, phi} = MyMath.rotate_to_front(+60, i);
+            def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
+            this.attachment_definitions.push(structuredClone(def));
+        }
 
-        def.socket = {front: 0.0, thetaDeg:0, phiDeg:120};
-        this.attachment_definitions.push(structuredClone(def));
-
-        def.socket = {front: 0.0, thetaDeg:0, phiDeg:-120};
-        this.attachment_definitions.push(structuredClone(def));
     }
 
     activate(pos, params){
@@ -151,7 +124,9 @@ export class Spirit_Jelly extends Spirit {
         this.counter -= delta / 1000;
         if (this.counter < 0){
             this.target = new BABYLON.Vector3(Math.random()*6 -3, Math.random()*6 -3, Math.random()*6 -3);
-            this.control_velocity = this.target.subtract(this.root.position).normalize().scale(0.1);
+            this.control_velocity = this.target.subtract(this.root.position);
+            this.control_velocity.normalize();
+            this.control_velocity.scaleInPlace(this.genome.speed);
             this.counter = 3 + 3 * Math.random();
         }
         this.control_velocity.scaleInPlace(0.98);

@@ -8,30 +8,55 @@ export class Spirit_Shark extends Spirit {
     constructor(scene, class_name, type_name){    
         super(scene, class_name, type_name);
 
-        this.disp_scale = 1.0;
-        this.collisionRadius = 1.0;
-        this.isCollidable = true;
-        this.mass = 2.5;
+        // クラス遺伝子
+        this.genome.disp_scale = 1.0;
+        this.genome.collision_radius = 1.0;
+        this.genome.is_collidable = true;
+        this.genome.mass = 2.5;
+        this.genome.hp_max = 300;
+        this.genome.hp_decrease = 0.08;
+        this.genome.rotate_speed = 1.8;
+        this.genome.speed = 0.1;
+        this.genome.accel = 0.001;
+        this.genome.predation_classes = ["Spirit_Fish", "Spirit_Squid"];
+        this.genome.predation_socket = {front : 0.0, theta : -5.0 , phi : 0.0};
+        this.genome.predation_radius = 0.5;
 
-        this.hp_max = 200;
-        this.hp = this.hp_max;
-        this.hp_decrease = 0.08;
+        // クラス固有のパラメータ
+        this.target = null;
+        this.visibleRadius = 15.0;
+        this.slowRadius = 2.5;
+        this.arrivalRadius = 0.2;
+        this.minSpeedRatio = 0.03;
+        this.chasePeriod = 5.0;
+        this.chaseTimer = this.chasePeriod;
+        this.base_color = new BABYLON.Color3();
+        this.base_color_2 = new BABYLON.Color3(0.7, 0.7, 0.7);
+        this.eye_emissive = new BABYLON.Color3();
 
-        this.rotate_speed = 1.3;
-
-
-        this.maxSpeed = 0.1;
-        this.maxForce = 0.01;
-        this.slowRadius = 3;
+        // テンポラリ変数
         this.tmp_target = new BABYLON.Vector3();
         this.tmp_toTarget = new BABYLON.Vector3();
         this.tmp_desiredVelocity = new BABYLON.Vector3();
         this.tmp_steering = new BABYLON.Vector3();
+        this.tmp_forward = new BABYLON.Vector3();
+        this.tmp_controlNorm = new BABYLON.Vector3();
     }
 
     create(params){
+        const speed_ratio = params?.speed ?? 1.0;
+        if (speed_ratio > 1.0){
+            this.base_color.copyFromFloats(1.0, 0.3, 0.9);
+        } else {
+            this.base_color.copyFromFloats(0.8, 0.8, 0.8);
+        }
 
-        // ◆ボディの作成
+        this.eye_emissive.copyFromFloats(6.0, 0.0, 0.0);
+
+        super.create(params);
+    }
+
+    _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameterZ: 3.5, diameterX: 1.5, diameterY: 2.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -40,64 +65,58 @@ export class Spirit_Shark extends Spirit {
         this.mesh.parent = this.root;
 
         const mat = new BABYLON.PBRMaterial("material", this.scene); 
-        mat.albedoColor = new BABYLON.Color3(0.8, 0.8, 0.8);
+        // mat.albedoColor.copyFrom(this.base_color);
+        mat.albedoTexture = this.get_perlin_texture(this.base_color, this.base_color_2, 23);
         mat.metallic = 0.8;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
         this.mesh.material = mat;
-
-        this.mesh.computeWorldMatrix(true);
-
-        // ◆捕食口の設定
-        this.predation_classes = ["Spirit_Fish"];
-        const predation_socket = this.get_socket(this.mesh, 0.0, -5, 0);
-        this.predation_position = predation_socket.position;
-        this.predation_radius = 1.2;
-
-        super.create(params);
     }
 
     _set_attachment_definitions(){
 
         let def;
 
+        const mouth_scale = this.genome_modifier?.predation_radius ?? 1.0;
         def = {
             name: "Attachment_Mouth",
             socket: {front:0.0, thetaDeg:-5, phiDeg:0},
-            params: {hasTeeth : true, biteSpeed : 3.0}
+            params: {hasTeeth : true, biteSpeed : 3.0, scale : mouth_scale}
         };
         this.attachment_definitions.push(structuredClone(def));
 
         def = {
             name: "Attachment_Tail",
-            socket: {front:0.0, thetaDeg:15, phiDeg:180},
-            params: {scale : 1.0}
+            socket: {front:0.0, thetaDeg:0, phiDeg:180},
+            params: {scale : 1.5, color : this.base_color}
         };
         this.attachment_definitions.push(structuredClone(def));
 
         def = {
             name: "Attachment_Fin",
             socket: {front:0.0, thetaDeg:+75, phiDeg:0},
-            params: {bottomScale : 2.0, height : 2.0}
+            params: {bottomScale : 1.0, height : 1.5, twist : 90, color : this.base_color}
         }
         this.attachment_definitions.push(structuredClone(def));
 
-        def.socket = {front:0.0, thetaDeg:-55, phiDeg:0};
-        def.params = {bottomScale : 2.0, height : 2.5};
+        def.socket = {front:-0.3, thetaDeg:-25, phiDeg:-30};
+        def.params = {bottomScale : 1.5, height : 2.0, twist : 90, color : this.base_color};
+        this.attachment_definitions.push(structuredClone(def));
+        def.socket.phiDeg *= -1;
         this.attachment_definitions.push(structuredClone(def));
 
-        def.socket = {front:-0.5, thetaDeg:+40, phiDeg: 180};
-        def.params = {bottomScale : 1.0, height : 1.5};
+        def.socket = {front:-0.8, thetaDeg:+45, phiDeg: 180};
+        def.params = {bottomScale : 1.0, height : 1.5, color : this.base_color};
         this.attachment_definitions.push(structuredClone(def));
 
-        def.socket = {front:-0.8, thetaDeg:-55, phiDeg: 180};
-        def.params = {bottomScale : 1.0, height : 1.5};
+        def.socket = {front:-0.8, thetaDeg:-35, phiDeg: 180};
+        def.params = {bottomScale : 1.0, height : 1.5, color : this.base_color};
         this.attachment_definitions.push(structuredClone(def));
         
         def = {
             name: "Attachment_Eye",
-            socket: {front:0.7, thetaDeg:+45, phiDeg:-90},
-            params: {scale : 1.0}
+            socket: {front:0.8, thetaDeg:+45, phiDeg:-55},
+            params: {scale : 1.0, emissive : this.eye_emissive}
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -114,43 +133,66 @@ export class Spirit_Shark extends Spirit {
 
     update(time, delta){
 
-        // ターゲット位置（魚群の重心）
-        this.tmp_target.set(0,0,0);
+        if ( !this.target || !this.target.alive){
+            let minDistSq = this.visibleRadius * this.visibleRadius;
+            for (let spirit of GameState.spirits){
+                if (this.genome.predation_classes.includes(spirit.class_name)){
+                    let distSq = BABYLON.Vector3.DistanceSquared(spirit.root.position, this.root.position);
+                    if (distSq < minDistSq){
+                        minDistSq = distSq;
+                        this.target = spirit;
+                    }
+                }
+            }
+            this.chaseTimer = this.chasePeriod;
+        }
+        if ( this.target ){
+            this.tmp_target.copyFrom(this.target.root.position);
 
-        let target_count = 0;
-        for (let spirit of GameState.spirits){
-            if (this.predation_classes.includes(spirit.class_name)){
-                target_count++;
-                this.tmp_target.addInPlace(spirit.root.position);
+            // ターゲットに向かう速度計算
+            this.tmp_target.subtractToRef(this.predation_position, this.tmp_toTarget);
+            const distance = this.tmp_toTarget.length();
+            if ( distance < this.arrivalRadius ){
+                this.control_velocity.set(0,0,0); //角度振動を防ぐため完全停止
+            } else {
+                let desiredSpeed = this.genome.speed;
+                if (distance < this.slowRadius) {
+                    desiredSpeed *= distance / this.slowRadius; //目的地到着時の振動を防ぐ
+                } else {
+                    BABYLON.Vector3.TransformNormalToRef(
+                        BABYLON.Axis.Z,
+                        this.root.getWorldMatrix(),
+                        this.tmp_forward
+                    );
+                    this.tmp_forward.normalize();
+                    this.control_velocity.normalizeToRef(this.tmp_controlNorm);
+                    let dot = BABYLON.Vector3.Dot(this.tmp_controlNorm, this.tmp_forward);
+                    // desiredSpeed を差異角度が大きいほど減衰
+                    if (dot <= 0) {
+                        desiredSpeed = this.minSpeedRatio;
+                    } else {
+                        desiredSpeed *= (dot * (1-this.minSpeedRatio)+ this.minSpeedRatio);
+                    }
+                }
+                this.tmp_toTarget.normalizeToRef(this.tmp_desiredVelocity);
+                this.tmp_desiredVelocity.scaleInPlace(desiredSpeed);
+                this.tmp_desiredVelocity.subtractToRef(this.control_velocity, this.tmp_steering);
+                
+                // 加速度制限
+                if (this.tmp_steering.length() > this.accel) {
+                    this.tmp_steering.normalize();
+                    this.tmp_steering.scaleInPlace(this.accel);
+                }
+                this.control_velocity.addInPlace(this.tmp_steering);
+                this.rotate_to(this.control_velocity, delta);
+            }
+
+            // 同一敵の追跡期間を限定
+            this.chaseTimer -= delta / 1000;
+            if (this.chaseTimer < 0){
+                this.target = null;
             }
         }
-        if (target_count > 0){
-            this.tmp_target.scaleInPlace(1/target_count);
-        } else {
-            this.tmp_target = new BABYLON.Vector3(Math.random()*6 -3, Math.random()*6 -3, Math.random()*6 -3);
-        }
-
-        // ターゲットに向かう速度計算
-        this.tmp_target.subtractToRef(this.root.position, this.tmp_toTarget);
-        const distance = this.tmp_toTarget.length();
- 
-        let desiredSpeed = this.maxSpeed;
-        if (distance < this.slowRadius) {
-            desiredSpeed *= distance / this.slowRadius;
-        }
-        this.tmp_toTarget.normalizeToRef(this.tmp_desiredVelocity);
-        this.tmp_desiredVelocity.scaleInPlace(desiredSpeed);
-        this.tmp_desiredVelocity.subtractToRef(this.control_velocity, this.tmp_steering);
-        
-        // 加速度制限
-        if (this.tmp_steering.length() > this.maxForce) {
-            this.tmp_steering.normalize();
-            this.tmp_steering.scaleInPlace(this.maxForce);
-        }
-        this.control_velocity.addInPlace(this.tmp_steering);
-
-        this.rotate_to(this.control_velocity, delta);
-
         super.update(time, delta);
     }
 

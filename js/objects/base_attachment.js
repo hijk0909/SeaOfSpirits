@@ -10,7 +10,7 @@ export class Attachment {
     }
 
     create_root(socket){
-        const root = new BABYLON.TransformNode("Root", this.scene);
+        const root = new BABYLON.TransformNode("Attachment_Root", this.scene);
         root.parent = this.parent;
         root.position.copyFrom(socket.position);
 

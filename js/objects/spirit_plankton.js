@@ -9,21 +9,23 @@ export class Spirit_Plankton extends Spirit {
     constructor(scene, class_name, type_name){
         super(scene, class_name, type_name);
 
-        this.disp_scale = 0.4;
-        this.isCollidable = false;
-        this.collisionRadius = 0.20;
-        this.mass = 0.5;
+        // クラス遺伝子
+        this.genome.hp_max = 10;
+        this.genome.hp_decrease = 0.0;
+        this.genome.disp_scale = 0.4;
+        this.genome.is_collidable = false;
+        this.genome.collision_radius = 0.20;
+        this.genome.mass = 0.5;
 
-        this.hp_max = 10;
-        this.hp = this.hp_max;
-        this.hp_decrease = 0.0;
-
+        // クラス固有のパラメータ
         this.num_spines = 13;
     }
 
     create(params){
+        super.create(params);
+    }
 
-        // ◆ボディの作成
+    _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameter: 0.5, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -37,10 +39,6 @@ export class Spirit_Plankton extends Spirit {
         mat.roughness = 1.0;
         mat.alpha = 1.0;
         this.mesh.material = mat;
-
-        this.mesh.computeWorldMatrix(true);
-
-        super.create(params);
     }
 
     _set_attachment_definitions(){
@@ -84,7 +82,7 @@ export class Spirit_Plankton extends Spirit {
     }
 
     update(time, delta){
-        if (this.root.position.length() > 5.0){
+        if (this.root.position.length() > 4.0){
             this.control_velocity = this.root.position.scale(-0.001);
         }
         this.control_velocity.scaleInPlace(0.98);

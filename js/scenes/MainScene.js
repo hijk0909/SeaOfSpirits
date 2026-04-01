@@ -5,7 +5,7 @@ import { MyInput } from '../utils/InputUtils.js';
 import { Scene } from "./base_scene.js";
 import { MainAsset } from "./MainAsset.js";
 import { Exec } from "./MainExec.js";
-import { Spawn } from "./MainSpawn.js";
+import { Spawn, SpawnScheduler } from "./MainSpawn.js";
 import { UI } from "./UI.js";
 import { TitleScene } from "./TitleScene.js";
 import { GameOverScene } from "./GameOverScene.js";
@@ -75,9 +75,9 @@ export class MainScene extends Scene {
         // フォグ
         scene.fogEnabled = true;
         scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-        scene.fogColor = new BABYLON.Color3(0.1, 0.1, 0.8); //青っぽく
-        scene.fogStart = 10.0;
-        scene.fogEnd = 28.0;
+        scene.fogColor = new BABYLON.Color3(0.2, 0.3, 0.8); //青っぽく
+        scene.fogStart = 15.0;
+        scene.fogEnd = 25.0;
 
         // シーン内の当たり判定の有効化
         scene.collisionsEnabled = false;
@@ -92,11 +92,65 @@ export class MainScene extends Scene {
         this.my_input = new MyInput(scene, this.game);
         this.my_input.registerNextAction(() => this.toggle_pause());
 
+        // 地面の生成
+        this.ground = this.create_ground(this.scene);
+
+        // オブジェクト生成クラスの生成
+        GameState.spawn = new Spawn(this.scene);
+        GameState.spawn_scheduler = new SpawnScheduler(this.scene);
+
         // 実行クラスの生成
-        this.exec = new Exec(scene);
+        this.exec = new Exec(this.scene);
 
         // ワイプの生成
         this.wipe = new Wipe(scene, GameState.camera);
+    }
+
+    create_ground(scene){
+            const xMin = -70, xMax = 70;
+            const zMin = 0, zMax = 50;
+            const subdivisions = 30; // 格子の分割数（多いほど細かい）
+
+            const width  = xMax - xMin;  // 20
+            const depth  = zMax - zMin;  // 30
+
+            // ベースのGroundメッシュを生成
+            const ground = BABYLON.MeshBuilder.CreateGround("seaFloor", {
+                width:  width,
+                height: depth,
+                subdivisions: subdivisions,
+                updatable: true
+            }, scene);
+
+            // 中心をずらす（CreateGroundは原点中心なので）
+            const centerX = (xMin + xMax) / 2;  // 0
+            const centerZ = (zMin + zMax) / 2;  // 5
+            ground.position.x = centerX;
+            ground.position.z = centerZ;
+
+            // 頂点データを取得してY座標を書き換える
+            const positions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+
+            for (let i = 0; i < positions.length; i += 3) {
+                // Y座標（i+1）を ランダム値に
+                positions[i + 1] = -10 - Math.random() * 2.0;
+            }
+
+            ground.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+
+            // 法線を再計算（ライティングを正しくするため）
+            ground.createNormals(true);
+
+            // マテリアル（青白い色）
+            const mat = new BABYLON.PBRMaterial("seaFloorMat", scene);
+            mat.albedoColor  = new BABYLON.Color3(0.6, 0.8, 1.0);
+            // mat.emissiveColor  = new BABYLON.Color3(0.6, 0.8, 1.0);
+            mat.metallic = 0.2;
+            mat.roughness = 1.0;
+            mat.alpha = 0.5;
+            mat.wireframe = false;  // trueにするとワイヤーフレーム確認できる
+            ground.material = mat;
+        return ground;
     }
 
     update(time, delta){
@@ -110,61 +164,8 @@ export class MainScene extends Scene {
         // ■ステージステータスによる状態遷移
         if (GameState.stage_state === GLOBALS.STAGE_STATE.START){
             // ◆開始（ステージの初期化処理）
-
-            // 自機・敵機・アイテム等の配置
-            if (GameState.spawn){
-                GameState.spawn.dispose();
-                GameState.spawn = null;
-                console.log("dispose spawn");
-            }
-            GameState.spawn = new Spawn(this.scene);
-
-            // [TEST] 精霊の生成
-            for(let i=0; i<10; i++){
-                const pos = new BABYLON.Vector3(
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4
-                );
-                GameState.spawn.activate("Spirit_Plankton", i, pos);
-            }
-
-            for(let i=0; i<1; i++){
-                const pos = new BABYLON.Vector3(
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4,
-                    -5
-                );
-                GameState.spawn.activate("Spirit_Shark", i, pos);
-            }
-
-            for(let i=0; i<1; i++){
-                const pos = new BABYLON.Vector3(
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4,
-                    Math.random()*8 - 4
-                );
-                GameState.spawn.activate("Spirit_Whale", i, pos);
-            }
-
-            for(let i=0; i<10; i++){
-                const pos = new BABYLON.Vector3(
-                    Math.random()*10 - 5,
-                    Math.random()*10 - 5,
-                    Math.random()*10 - 5
-                );
-                GameState.spawn.activate("Spirit_Fish", i, pos);
-            }
-
-            for(let i=0; i<5; i++){
-                const pos = new BABYLON.Vector3(
-                    Math.random()*6 - 3,
-                    Math.random()*6 - 3,
-                    Math.random()*6 - 3
-                );
-                GameState.spawn.activate("Spirit_Jelly", i, pos);
-            }
-
+            // 精霊の初期配置
+            GameState.spawn_scheduler.initial_placement();
             // [STATUS_MSG]
             GameState.ui_manager.show_status_message(`GET READY`);
             // [WIPE]
@@ -302,6 +303,16 @@ export class MainScene extends Scene {
         if (GameState.spawn){
             GameState.spawn.dispose();
             GameState.spawn = null;
+        }
+
+        if (GameState.spawn_scheduler){
+            GameState.spawn_scheduler.dispose();
+            GameState.spawn_scheduler = null;
+        }
+
+        if (this.ground){
+            this.ground.dispose();
+            this.ground = null;
         }
 
         super.dispose();

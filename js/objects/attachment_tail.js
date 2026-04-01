@@ -11,7 +11,7 @@ export class Attachment_Tail extends Attachment{
         super(spirit, socket);
 
         const { position: tp, normal: tn } = socket;
-        const { scale = 1.0 , twist = false, alpha = 1.0, color = DEFAULT_COLOR} = parameters;
+        const { scale = 1.0 , twist = false, speed = 7.0, alpha = 1.0, color = DEFAULT_COLOR} = parameters;
         this.normal = tn;
 
         const positions = [
@@ -35,7 +35,7 @@ export class Attachment_Tail extends Attachment{
         tail.material = mat;
 
         tail._wagPhase = Math.random() * Math.PI * 2; // 個体差
-        tail._wagSpeed = 7.0;   // 周波数
+        tail._wagSpeed = speed;   // 周波数
         tail._wagAmp   = 0.4;   // 振れ幅（ラジアン）
 
         tail.position.copyFrom(tp);

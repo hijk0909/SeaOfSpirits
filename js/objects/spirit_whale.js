@@ -2,38 +2,46 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
-import { Attachment_Mouth} from "./attachment_mouth.js";
-import { Attachment_Eye} from "./attachment_eye.js";
-import { Attachment_Tail} from "./attachment_tail.js";
-import { Attachment_Spine} from "./attachment_spine.js";
+
+const TEST_COLOR = new BABYLON.Color3(0.0, 1.0, 0.0);
 
 // クジラ
 export class Spirit_Whale extends Spirit {
     constructor(scene, class_name, type_name){    
         super(scene, class_name, type_name);
 
-        this.disp_scale = 1.5;
-        this.collisionRadius = 2.8;
-        this.isCollidable = true;
-        this.mass = 6.0;
+        // クラス遺伝子
+        this.genome.hp_max = 450;
+        this.genome.hp_decrease = 0.01;
+        this.genome.disp_scale = 1.5;
+        this.genome.collision_radius = 2.8;
+        this.genome.is_collidable = true;
+        this.genome.mass = 6.0;
+        this.genome.speed = 0.03;
+        this.genome.accel = 0.2;
+        this.genome.rotate_speed = 2.0;
+        this.genome.predation_classes = ["Spirit_Plankton"];
+        this.genome.predation_socket = {front : 0.0, theta : -5.0 , phi : 0.0};
+        this.genome.predation_radius = 3.8;
 
+        // クラス固有の設定      
         this.base_alpha = 0.5;
         this.base_color = new BABYLON.Color3(0.3, 0.82, 1.0);
 
-        this.hp_max = 200;
-        this.hp = this.hp_max;
-        this.hp_decrease = 0.05;
-
-        this.rotate_speed = 0.2;
-
-        this.counter = 0;
-        this.tmp_target = new BABYLON.Vector3();
+        // 運動用変数
+        this.life_time = 0;
+        this.roaming_center = new BABYLON.Vector3(0, 0, 5.0); //周回中心
+        this.roaming_radius = 7.0; //周回半径
+        this.tmp_toObject = new BABYLON.Vector3();
         this.tmp_accel = new BABYLON.Vector3();
     }
 
-    create(params){
+    create(params) {
+        super.create(params);
+        this.setupDepthClone();
+    }
 
-        // ◆ボディの作成
+    _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameterZ: 4.0, diameterX: 3.0, diameterY: 3.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -47,16 +55,6 @@ export class Spirit_Whale extends Spirit {
         mat.roughness = 1.0;
         mat.alpha = this.base_alpha;
         this.mesh.material = mat;
-
-        this.mesh.computeWorldMatrix(true);
-
-        // ◆捕食口の設定
-        this.predation_classes = ["Spirit_Plankton"];
-        const predation_socket = this.get_socket(this.mesh, 0.0, -5, 0);
-        this.predation_position = predation_socket.position;
-        this.predation_radius = 2.0;
-
-        super.create(params);
     }
 
     _set_attachment_definitions(){
@@ -72,8 +70,8 @@ export class Spirit_Whale extends Spirit {
 
         def = {
             name: "Attachment_Tail",
-            socket: {front:0.0, thetaDeg:-15, phiDeg:180},
-            params: {scale : 3.0, twist : true, alpha : this.base_alpha, color : this.base_color}
+            socket: {front:0.0, thetaDeg:-5, phiDeg:180},
+            params: {scale : 3.0, twist : true, speed : 3.0, alpha : this.base_alpha, color : this.base_color}
         };
         this.attachment_definitions.push(structuredClone(def));
 
@@ -89,7 +87,7 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:0.1, thetaDeg:-45, phiDeg:+90},
-            params: {bottomScale : 1.0, height : 2.0, alpha : this.base_alpha, color : this.base_color}
+            params: {bottomScale : 1.0, height : 2.0, twist : 90, alpha : this.base_alpha, color : this.base_color}
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -97,8 +95,8 @@ export class Spirit_Whale extends Spirit {
 
         def = {
             name: "Attachment_Spine",
-            socket: {front:0.4, thetaDeg:+90, phiDeg:0},
-            params: {diameterBottom : 0.5, height :1.5, alpha : this.base_alpha, color : this.base_color}
+            socket: {front:0.4, thetaDeg:+60, phiDeg:0},
+            params: {diameterBottom : 0.5, height :1.0, alpha : this.base_alpha, color : this.base_color}
         };
         this.attachment_definitions.push(structuredClone(def));
     }
@@ -113,31 +111,32 @@ export class Spirit_Whale extends Spirit {
 
     update(time, delta){
 
-        this.counter -= delta / 1000;
-        if (this.counter < 0){
-            let count = 0;
-            this.tmp_target.set(0,0,0);
-            for (let spirit of GameState.spirits){
-                if (this.predation_classes.includes(spirit.class_name)){
-                    count++;
-                    this.tmp_target.addInPlace(spirit.root.position);
-                }
-            }
-            if (count > 0){
-                this.tmp_target.scaleInPlace(1/count);
-                this.target = this.tmp_target;
-            } else {
-                this.target = new BABYLON.Vector3(Math.random()*10 -5, Math.random()*10 -5, Math.random()*10);
-            }
+        this.life_time += delta;
 
-            this.counter = 4 + 4 * Math.random();
-        }
+        // 中心→対象の方向ベクトル（＝法線方向）
+        this.root.position.subtractToRef(this.roaming_center, this.tmp_toObject);
+        const currentRadius = this.tmp_toObject.length();
+        if (currentRadius < 0.001) return;
 
-        this.target.subtractToRef(this.root.position, this.tmp_accel);
-        this.tmp_accel.normalize();
-        this.tmp_accel.scaleInPlace(0.0003);
+        // 球面上に位置するように法線方向の力加減を計算
+        this.tmp_toObject.normalize(); //法線方向の単位ベクトル
+        const radiusError = currentRadius - this.roaming_radius; // 正:外側, 負:内側
+        const vNormal = BABYLON.Vector3.Dot(this.control_velocity, this.tmp_toObject); // 現在速度の法線方向成分
+        const kp = this.genome.accel;        // 中心方向へのバネ定数
+        const kd = 2.0 * Math.sqrt(kp);      // 臨界減衰係数（ダンパー）
+        const aNormalScalar = -kp * radiusError - kd * vNormal; // 法線方向の加速度（位置ずれを戻す + 法線速度を打ち消す）
+
+        // 接平面方向の加速度
+        const rotationAxis = this.tmp_toObject; //回転軸
+        const steeringSpeed = Math.sin(this.life_time * 0.0001) * 0.005; //旋回角度
+        const rotation = BABYLON.Quaternion.RotationAxis(rotationAxis, steeringSpeed);
+        this.control_velocity.rotateByQuaternionToRef(rotation, this.control_velocity); //速度ベクトルの回転
+
+        // 法線方向の加速度を加えてから正規化・定数倍
+        this.tmp_accel.copyFrom(this.tmp_toObject).scaleInPlace(aNormalScalar);
         this.control_velocity.addInPlace(this.tmp_accel);
-        this.control_velocity.scaleInPlace(0.98);
+        this.control_velocity.normalize();
+        this.control_velocity.scaleInPlace(this.genome.speed);
 
         this.rotate_to(this.control_velocity, delta);
 

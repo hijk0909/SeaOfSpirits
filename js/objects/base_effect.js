@@ -8,7 +8,6 @@ export class Effect extends Drawable {
     }
 
     create(params){
-        super.create(params);
     }
 
     activate(pos, params){

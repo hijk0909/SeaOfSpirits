@@ -6,33 +6,42 @@ import { Spirit } from "./base_spirit.js";
 const HP_DECREASE = 0.002;
 const HP_ABSORB = 0.04;
 
+const INFECTING_EMISSIVE = new BABYLON.Color3(5.0, 0, 0.2);
+const INFECTING_ALBEDO = new BABYLON.Color3(1.0, 0, 0.5);
+const DRIFTING_EMISSIVE = new BABYLON.Color3(0.3, 0, 0.2);
+const DRIFTING_ALBEDO = new BABYLON.Color3(0.6, 0, 0.3);
+
 // ウイルス
 export class Spirit_Virus extends Spirit {
 
     constructor(scene, class_name, type_name){
         super(scene, class_name, type_name);
 
-        this.disp_scale = 0.08;
-        this.isCollidable = false;
+        // クラス遺伝子
+        this.genome.hp_max = 10;
+        this.genome.hp_decrease = HP_DECREASE;
+        this.genome.disp_scale = 0.08;
+        this.genome.is_collidable = false;
+        this.genome.collision_radius = 0.15;
 
-        this.hp_max = 10;
-        this.hp = this.hp_max;
-        this.hp_decrease = HP_DECREASE;
-
+        // クラス固有の設定      
         this.infecting = false;
-        this.infection_classes = ["Spirit_Fish", "Spirit_Jelly", "Spirit_Shark", "Spirit_Whale"];
+        this.infection_classes = ["Spirit_Fish", "Spirit_Jelly", "Spirit_Shark", "Spirit_Squid", "Spirit_Whale"];
         this.infectionRadius = 0.2; 
         this.infectionObject = null;
         this.infectionMattrix = null;
 
-        this._tmpScale    = new BABYLON.Vector3();
-        this._tmpRot      = new BABYLON.Quaternion();
-        this._tmpPos      = new BABYLON.Vector3();
+        // テンポラリ変数
+        this.tmpScale    = new BABYLON.Vector3();
+        this.tmpRot      = new BABYLON.Quaternion();
+        this.tmpPos      = new BABYLON.Vector3();
     }
 
     create(params){
+        super.create(params);
+    }
 
-        // ◆ボディの作成
+    _create_body(){
         const phi = (1 + Math.sqrt(5)) / 2;
         const a = 1.0, b = 1.0 / phi;
         const positions = [
@@ -62,20 +71,19 @@ export class Spirit_Virus extends Spirit {
         this.mesh.isPickable = false;
         this.mesh.parent = this.root;
 
-        const mat = new BABYLON.PBRMaterial("mat", this.scene);
+        const mat = new BABYLON.PBRMaterial("virusmat", this.scene);
         // mat.metallic = 0.0;
         // mat.roughness = 1.0;
-        mat.diffuseColor  = new BABYLON.Color3(1.0, 0.0, 0.6);
-        mat.emissiveColor = new BABYLON.Color3(0.5, 0.0, 0.3);
+        // mat.albedoColor  = DRIFTING_ALBEDO;
+        // mat.emissiveColor = DRIFTING_EMISSIVE;
         mat.wireframe = true;
         this.mesh.material = mat;
-        this.mesh.scaling = new BABYLON.Vector3(this.disp_scale, this.disp_scale, this.disp_scale);
-
-        super.create(params);
     }
 
     activate(pos, params){
-        this.mesh.material.emissiveColor = new BABYLON.Color3(1.0, 0.0, 0.8);
+        this.infecting = false;
+        this.mesh.albedoColor  = DRIFTING_ALBEDO;
+        this.set_emissive_base(DRIFTING_EMISSIVE);
         super.activate(pos, params);
     }
 
@@ -88,22 +96,25 @@ export class Spirit_Virus extends Spirit {
             // ◆感染状態
             if (!this.infectionObject || !this.infectionObject.alive || this.infectionObject.dying){
                 this.infecting = false;
-                this.hp_decrease = HP_DECREASE;
+                this.hp_decrease = this.genome.hp_decrease;
+
+                this.mesh.material.albedoColor = DRIFTING_ALBEDO;
+                this.set_emissive_base(DRIFTING_EMISSIVE);
                 // [TEST]
                 GameState.bubbles.add_bubble(this.root.position);
                 // console.log("[VIRUS] Parent DIE");
             } else {
                 const newWorldMat = this.infectionMatrix.multiply(this.infectionObject.root.getWorldMatrix());
-                newWorldMat.decompose(this._tmpScale, this._tmpRot, this._tmpPos);
-                this.root.position  = this._tmpPos;
-                this.root.rotationQuaternion = this._tmpRot;
+                newWorldMat.decompose(this.tmpScale, this.tmpRot, this.tmpPos);
+                this.root.position  = this.tmpPos;
+                this.root.rotationQuaternion = this.tmpRot;
                 this.infectionObject.hp = Math.max(0, this.infectionObject.hp - HP_ABSORB);
-                this.hp = Math.min(this.hp_max, this.hp + HP_ABSORB);
+                this.hp = Math.min(this.genome.hp_max, this.hp + HP_ABSORB);
                 // console.log("[VIRUS] Infecting");         
             }
         } else {
             // ◆浮遊状態
-            if (this.root.position.length() > 3.5){
+            if (this.root.position.length() > 5.0){
                 this.control_velocity = this.root.position.scale(-0.001);
             }
             this.control_velocity.scaleInPlace(0.98);
@@ -119,6 +130,9 @@ export class Spirit_Virus extends Spirit {
                         // console.log("[VIRUS] Infection");
                         this.infecting = true;
                         this.hp_decrease = 0.0;
+                        this.mesh.material.albedoColor = INFECTING_ALBEDO;
+                        this.set_emissive_base(INFECTING_EMISSIVE, 0);
+
                         this.infectionObject = spirit;
                         const worldMatA = this.root.getWorldMatrix();
                         const worldMatB = spirit.root.getWorldMatrix();

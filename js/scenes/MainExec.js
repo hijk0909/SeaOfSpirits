@@ -10,118 +10,15 @@ export class Exec {
         GameState.player = new Player(this.scene, "Player");
         GameState.bubbles = new Bubbles(this.scene, "Bubbles");
 
-        this.max_plankton = 100;
-        this.period_plankton = 1000;
-        this.count_plankton = this.period_plankton;
-
-        this.max_virus = 30;
-        this.period_virus = 1130;
-        this.count_virus = this.period_virus;
-
-        this.max_fish = 50;
-        this.period_fish = 3000;
-        this.count_fish = this.period_fish;
-
-        this.max_jelly = 20;
-        this.period_jelly = 13500;
-        this.count_jelly = this.period_jelly;
-
-        this.max_shark = 3;
-        this.period_shark = 81900;
-        this.count_shark = this.period_shark;
-
-        this.max_whale = 2;
-        this.period_whale = 198000;
-        this.count_whale = this.period_whale;
-
         // 距離計算用のテンポラリVector3
-        this.tmpDiff   = new BABYLON.Vector3(0,0,0);
-        this.tmpNormal = new BABYLON.Vector3(0,0,0);
-    }
-
-    count_class(class_name) {
-        return GameState.spirits.filter(s => s.class_name === class_name).length;
+        this.tmpDiff    = new BABYLON.Vector3();
+        this.tmpNormal  = new BABYLON.Vector3();
+        this.tmpImpulse = new BABYLON.Vector3();
     }
 
     update(time, delta){
-
-        // [TEST] ◆テスト生成
-        this.count_plankton -= delta;
-        if (this.count_plankton < 0){
-            this.count_plankton = this.period_plankton;
-            if (this.count_class("Spirit_Plankton") < this.max_plankton){
-                const u = Math.random();
-                const v = Math.random();
-
-                const theta = Math.acos(2 * u - 1); // 0〜π
-                const phi = 2 * Math.PI * v;        // 0〜2π
-
-                const x = Math.sin(theta) * Math.cos(phi);
-                const y = Math.sin(theta) * Math.sin(phi);
-                const z = Math.cos(theta);
-
-                const pos = new BABYLON.Vector3(x, y, z).scale(20);
-
-                GameState.spawn.activate("Spirit_Plankton", 0, pos);
-            }
-        }
-
-        this.count_virus -= delta;
-        if (this.count_virus < 0){
-            this.count_virus = this.period_virus;
-            if (this.count_class("Spirit_Virus") < this.max_virus){
-                const u = Math.random();
-                const v = Math.random();
-
-                const theta = Math.acos(2 * u - 1); // 0〜π
-                const phi = 2 * Math.PI * v;        // 0〜2π
-
-                const x = Math.sin(theta) * Math.cos(phi);
-                const y = Math.sin(theta) * Math.sin(phi);
-                const z = Math.cos(theta);
-
-                const pos = new BABYLON.Vector3(x, y, z).scale(19);
-
-                GameState.spawn.activate("Spirit_Virus", 0, pos);
-            }
-        }
-
-        this.count_fish -= delta;
-        if (this.count_fish < 0){
-            this.count_fish = this.period_fish;
-            if (this.count_class("Spirit_Fish") < this.max_fish){
-                const pos = new BABYLON.Vector3(Math.random()*10 - 5,Math.random()*10 - 5,20);
-                GameState.spawn.activate("Spirit_Fish", 0, pos);
-            }
-        }
-
-        this.count_jelly -= delta;
-        if (this.count_jelly < 0){
-            this.count_jelly = this.period_jelly;
-            if (this.count_class("Spirit_Jelly") < this.max_jelly){
-                const pos = new BABYLON.Vector3(Math.random()*10 - 5,Math.random()*10 - 5,20);
-                GameState.spawn.activate("Spirit_Jelly", 0, pos);
-            }
-        }
-
-        this.count_shark -= delta;
-        if (this.count_shark < 0){
-            this.count_shark = this.period_shark;
-            if (this.count_class("Spirit_Shark") < this.max_shark){
-                const pos = new BABYLON.Vector3(Math.random()*10 - 5,Math.random()*10 - 5,20);
-                GameState.spawn.activate("Spirit_Shark", 0, pos);
-            }
-        }
-
-        this.count_whale -= delta;
-        if (this.count_whale < 0){
-            this.count_whale = this.period_whale;
-            if (this.count_class("Spirit_Whale") < this.max_whale){
-                const pos = new BABYLON.Vector3(Math.random()*10 - 5,Math.random()*10 - 5,20);
-                GameState.spawn.activate("Spirit_Whale", 0, pos);
-            }
-        }
-
+        // ◆定期的なオブジェクト生成
+        GameState.spawn_scheduler.update(time, delta);
 
         // ◆プレイヤー操作
         GameState.player.update(time, delta);
@@ -134,7 +31,7 @@ export class Exec {
             const spirit = GameState.spirits[i];
 
             spirit.update(time, delta);
-            if (!spirit.isAlive()) {
+            if (!spirit.alive) {
                 GameState.spawn.deactivate(spirit);
                 GameState.spirits.splice(i, 1);
                 continue;
@@ -144,10 +41,10 @@ export class Exec {
         // ◆精霊同士の当たり判定
         for (let i = 0; i < GameState.spirits.length - 1; i++){
             const obj1 = GameState.spirits[i];
-            if (obj1.dying || !obj1.isCollidable) continue;
+            if (!obj1.alive || obj1.dying || !obj1.isCollidable) continue;
             for (let j = i + 1; j < GameState.spirits.length; j++){
                 const obj2 = GameState.spirits[j];
-                if (obj2.dying || !obj2.isCollidable) continue;
+                if (!obj2.alive ||obj2.dying || !obj2.isCollidable) continue;
                 this.check_collision(obj1, obj2);
             }
         }
@@ -155,20 +52,25 @@ export class Exec {
         // ◆捕食判定
         for (let i = 0; i < GameState.spirits.length; i++){
             const obj1 = GameState.spirits[i];
-            if (obj1.dying || obj1.predation_classes.length === 0) continue;
+            if (obj1.dying || obj1.genome.predation_classes.length === 0) continue;
             for (let j = 0; j < GameState.spirits.length; j++){
                 const obj2 = GameState.spirits[j];
                 if (obj1 === obj2) continue;
-                if (obj2.dying || !obj1.predation_classes.includes(obj2.class_name)) continue;
+                if (obj2.dying || !obj1.genome.predation_classes.includes(obj2.class_name)) continue;
                 if (this.check_predation(obj1, obj2)){
                     // console.log("predation:", obj1.class_name, obj2.class_name);
-                    obj1.control_velocity.copyFrom(GLOBALS.ZERO_VECTOR); //[TEST]捕食したら停止
+                    // obj1.control_velocity.scaleInPlace(0.5); //[TEST]捕食したら減速
                     obj2.set_dying();
 
-                    obj1.hp = Math.min(obj1.hp_max, obj1.hp + obj2.hp); //[TEST] 捕食相手のHPを取得
+                    obj1.hp = Math.min(obj1.genome.hp_max, obj1.hp + obj2.hp); //[TEST] 捕食相手のHPを取得
 
-                    GameState.spawn.activate("Effect_Predation", "", obj2.root.position, {size : obj2.collisionRadius});
-                    GameState.asset.se.predation.play_3D(obj2.root.position);
+                    if (obj2.class_name === "Spirit_Plankton"){
+                        GameState.spawn.activate("Effect_Feeding", "", obj2.root.position, {size : obj2.collisionRadius});
+                        GameState.asset.se.feeding.play_3D(obj2.root.position);
+                    } else {
+                        GameState.spawn.activate("Effect_Predation", "", obj2.root.position, {size : obj2.collisionRadius});
+                        GameState.asset.se.predation.play_3D(obj2.root.position);
+                    }
 
                     // [TEST]
                     GameState.bubbles.add_bubble(obj2.root.position);
@@ -181,7 +83,7 @@ export class Exec {
             const effect = GameState.effects[i];
 
             effect.update(time, delta);
-            if (!effect.isAlive()) {
+            if (!effect.alive) {
                 GameState.spawn.deactivate(effect);
                 GameState.effects.splice(i, 1);
                 continue;
@@ -190,15 +92,15 @@ export class Exec {
 
     } // End of update
 
-    // Spiritsクラス間の当たり判定
+    // 捕食位置の当たり判定
     check_predation(predator, prey){
 
-        const dx = prey.root.position.x - predator.root.position.x;
-        const dy = prey.root.position.y - predator.root.position.y;
-        const dz = prey.root.position.z - predator.root.position.z;
+        const dx = prey.root.position.x - predator.predation_position.x;
+        const dy = prey.root.position.y - predator.predation_position.y;
+        const dz = prey.root.position.z - predator.predation_position.z;
         const distSq = dx*dx + dy*dy + dz*dz;
 
-        const radius_sum = prey.collisionRadius + predator.predation_radius;
+        const radius_sum = prey.genome.collision_radius + predator.genome.predation_radius;
 
         return distSq < radius_sum * radius_sum;
     }
@@ -210,53 +112,60 @@ export class Exec {
         const dy = obj2.root.position.y - obj1.root.position.y;
         const dz = obj2.root.position.z - obj1.root.position.z;
         const distSq = dx*dx + dy*dy + dz*dz;
-
         const radius_sum = obj1.collisionRadius + obj2.collisionRadius;
 
-        let impulse = null;
-        if (distSq < radius_sum * radius_sum){
-            // 衝突方向（normal は、obj1 から見た obj2 の相対位置）
-            obj2.root.position.subtractToRef(obj1.root.position, this.tmpDiff)
+        if (distSq >= radius_sum * radius_sum) return null;
 
-            // const diff = obj2.root.position.clone().subtract(obj1.root.position);
+        // 衝突方向（normal は、obj1 から見た obj2 の相対位置）
+        obj2.root.position.subtractToRef(obj1.root.position, this.tmpDiff);
 
-            if (distSq < 0.001) { //至近距離の場合、法線方向をランダム化
-                const seed = obj1.id || 1;
-                // normal = new BABYLON.Vector3(0,0,-1);
-                this.tmpNormal = new BABYLON.Vector3(Math.cos(seed), 0, Math.sin(seed)).normalize();  
-            } else {
-                this.tmpDiff.normalizeToRef(this.tmpNormal);
-            }
-
-            // 重なり解決（速度ベクトル更新）(重なりが大きいほど強く反発)
-            // const overlap = radius_sum - Math.sqrt(distSq);
-            // const overlap_repulsion = this.tmpNormal.scale(overlap * GLOBALS.COLLIDABLE.OVERLAP_REPULSION_COEFFICIENT); // overlap比例の反発係数
-            // obj1.add_overlap_impulse(overlap_repulsion);
-            // obj2.add_overlap_impulse(overlap_repulsion.scale(-1) );
-            // if (overlap_repulsion.length() > 0.15){ console.log("repulsin:", overlap_repulsion.length()); }
-
-            // 運動量を交換 (velocity_relative は obj1 から見た obj2 の相対速度)
-            const velocity_relative = obj2.velocity.clone().subtract(obj1.velocity);
-            const dot = BABYLON.Vector3.Dot(velocity_relative, this.tmpNormal);
-            const e = 0.3;    //e=1.0:完全弾性、e=0.0:完全非弾性
-            impulse = this.tmpNormal.scale((1+e) * dot / (1/obj1.mass + 1/obj2.mass));
-            obj1.add_impulse( impulse);
-            obj2.add_impulse( impulse.scale(-1) );
-
-            obj1.collided = true;
-            obj2.collided = true;
-
-            // [TEST]
-            GameState.bubbles.add_bubble(obj2.root.position);
-
-            // ヒットした時に対象を光らせる
-            if (impulse.length() > 0.2){
-                obj1.flash();
-                obj2.flash();
-                GameState.asset.se.collision.play_3D(obj1.root.position);
-                // console.log("impulse:", impulse.length(), dot);
-            }
-            return impulse;
+        // 法線（至近距離の場合、ランダム化）
+        if (distSq < 0.000001) {
+            const seed = Math.rondom();
+            this.tmpNormal = new BABYLON.Vector3(Math.cos(seed), 0, Math.sin(seed)).normalize();
+            console.log("too near");
+        } else {
+            this.tmpDiff.normalizeToRef(this.tmpNormal);
         }
+
+        // 重なり解決（moveWithCollisionを使っていないので位置を直接更新）
+        const overlap = radius_sum - Math.sqrt(distSq);
+        if (overlap > GLOBALS.COLLIDABLE.OVERLAP_RESOLUTION_THRESHOLD){
+            // console.log("overlap:", overlap);
+            this.tmpNormal.scaleToRef(- overlap * GLOBALS.COLLIDABLE.OVERLAP_RESOLUTION_RATIO, this.tmpDiff);
+            obj1.root.position.addInPlace(this.tmpDiff);
+            this.tmpNormal.scaleToRef(  overlap * GLOBALS.COLLIDABLE.OVERLAP_RESOLUTION_RATIO, this.tmpDiff);
+            obj2.root.position.addInPlace(this.tmpDiff);
+        }
+
+        // 運動量を交換 (obj1 から見た obj2 の相対速度を計算)
+        const vRelX = obj2.velocity.x - obj1.velocity.x;
+        const vRelY = obj2.velocity.y - obj1.velocity.y;
+        const vRelZ = obj2.velocity.z - obj1.velocity.z;
+        const dot = vRelX * this.tmpNormal.x + vRelY * this.tmpNormal.y + vRelZ * this.tmpNormal.z;
+        if (dot > 0) return null; //既に離れようとしている時には処理しない
+
+        const e = 0.3;    //e=1.0:完全弾性、e=0.0:完全非弾性
+        const j = -(1 + e) * dot / (1 / obj1.mass + 1 / obj2.mass);
+        const impX = this.tmpNormal.x * j;
+        const impY = this.tmpNormal.y * j;
+        const impZ = this.tmpNormal.z * j;
+        this.tmpImpulse.set(impX, impY, impZ);
+        obj1.add_impulse( this.tmpImpulse.scale(-1) );
+        obj2.add_impulse( this.tmpImpulse );
+        obj1.collided = true;
+        obj2.collided = true;
+
+        // [TEST]
+        GameState.bubbles.add_bubble(obj2.root.position);
+
+        // ヒットした時に対象を光らせる
+        // if (this.tmpImpulse.length() > 0.001){
+            obj1.flash();
+            obj2.flash();
+            GameState.asset.se.collision.play_3D(obj1.root.position);
+            // console.log("impulse:", impulse.length(), dot);
+        // }
+        return this.tmpImpulse;
     }
 } // End of Exec

@@ -26,7 +26,7 @@ export class Bubbles extends Drawable {
         mat.albedoColor = new BABYLON.Color3(0.5, 0.8, 1.0);
         mat.emissiveColor = new BABYLON.Color3(0.5, 0.8, 1.0); // 自発光
         mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
-        mat.alpha = 0.2;
+        mat.alpha = 1.0;
         mat.metallic = 0.0;
         mat.roughness = 1.0;
         mat.disableLighting = true;

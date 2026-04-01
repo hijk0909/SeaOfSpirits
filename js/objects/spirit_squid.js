@@ -1,0 +1,161 @@
+// spirit_squid.js
+import { GLOBALS } from '../GameConst.js';
+import { GameState } from "../GameState.js";
+import { Spirit } from "./base_spirit.js";
+import { MyMath } from "../utils/MathUtils.js";
+
+// クラゲ
+export class Spirit_Squid extends Spirit {
+
+    constructor(scene, class_name, type_name){
+        super(scene, class_name, type_name);
+
+        // クラス遺伝子
+        this.genome.hp_max = 120;
+        this.genome.hp_decrease = 0.026;
+        this.genome.disp_scale = 1.3;
+        this.genome_collision_radius = 0.25;
+        this.genome_is_collidable = true;
+        this.genome.mass = 1.8;
+        this.genome.speed = 0.2;
+        this.genome.rotate_speed = 1.7;
+        this.genome.predation_classes = ["Spirit_Plankton", "Spirit_Jelly", "Spirit_Fish"];
+        this.genome.predation_socket = {front : 0.0, theta : 0.0 , phi : 0.0};
+        this.genome.predation_radius = 1.0;
+
+        // クラス固有のパラメータ
+        this.counter = 0;
+        this.target = new BABYLON.Vector3(0,0,0);
+        this.eye_emissive = new BABYLON.Color3();
+    }
+
+    create(params){
+        this.eye_emissive.copyFromFloats(1.0, 5.0, 1.0);
+        super.create(params);
+        this.setupDepthClone();
+    }
+
+    _create_body(){
+        this.mesh = BABYLON.MeshBuilder.CreateSphere( "spirit_squid_body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
+
+        this.mesh.position = new BABYLON.Vector3(0,0,0);
+        this.mesh.checkCollisions = false;
+        this.mesh.isPickable = false;
+        this.mesh.parent = this.root;
+
+        this.transform_to_squid(this.mesh);
+
+        const mat = new BABYLON.PBRMaterial("spirit_squid_material", this.scene); 
+        mat.albedoColor = new BABYLON.Color3(1.0, 0.5, 0.2);
+        mat.metallic = 0.2;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.mesh.material = mat;
+    }
+
+    _set_attachment_definitions(genome){
+
+        let def;
+
+        def = {
+            name: "Attachment_Tentacle",
+            params: {segmentCont : 3, length : 0.20, thicknessBase : 0.3, thicknessTip : 0.02}
+        };
+        for (let i = 0; i < 360; i += 60){
+            const {theta, phi} = MyMath.rotate_to_front(-55, i);
+            def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
+            this.attachment_definitions.push(structuredClone(def));
+        }
+
+        def ={
+            name: "Attachment_Eye",
+            socket: {front:0.0, thetaDeg:+15, phiDeg: -90},
+            params:  {scale : 1.0, emissive : this.eye_emissive}
+        };
+        this.attachment_definitions.push(structuredClone(def));
+        def.socket.phiDeg *= -1;
+        this.attachment_definitions.push(structuredClone(def));
+
+        def = {
+            name: "Attachment_Fin",
+            socket: {front:+0.2, thetaDeg:0, phiDeg: +25},
+            params: {bottomScale : 1.2, height : 0.8, twist : 90 }
+        }
+        this.attachment_definitions.push(structuredClone(def));
+        def.socket.phiDeg *= -1;
+        this.attachment_definitions.push(structuredClone(def));
+
+    }
+
+    activate(pos, params){
+        super.activate(pos, params);
+    }
+
+    deactivate(){
+        super.deactivate();
+    }
+
+    transform_to_squid(mesh, params = {}){
+        const positions = mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+        const {lengthFactor= 1.6, taperSharpness = 1.8, headWidth = 1.25, headFlatten = 0.25 } = params;
+
+        for (let i = 0; i < positions.length; i += 3) {
+            let x = positions[i];
+            let y = positions[i + 1];
+            let z = positions[i + 2];
+
+            // 正規化されたt（球の半径を1.0基準とする）
+            const radius = Math.sqrt(x * x + y * y + z * z) || 1.0;
+            const normalizedZ = z / radius;  // -1.0 〜 +1.0
+
+            if (normalizedZ >= 0) {
+                // +Z側（マントル後方）：細長くシャープに伸ばす（jet propulsionのイメージ）
+                const t = normalizedZ;  // 0.0 〜 1.0
+                // Zを伸ばす（lengthFactorで制御）
+                const zNew = lengthFactor * Math.pow(t, 0.7);  // やや急に伸びて尖る
+                positions[i + 2] = zNew;
+
+                // 横方向を先細り（taper）
+                const scale = 1.0 - (taperSharpness - 1.0) * Math.pow(t, 1.2);
+                positions[i] *= scale;
+                positions[i + 1] *= scale;
+            } 
+            else {
+                // -Z側（頭部側）：適度に潰して平らにし、横幅を少し広げる（脚の基部を確保）
+                const t = -normalizedZ;  // 0.0 〜 1.0
+                // Zを平たく（headFlattenで制御）
+                const zNew = -headFlatten * Math.pow(t, 0.4);  // 強く潰しすぎず底面確保
+                positions[i + 2] = zNew;
+
+                // 横方向：頭部側を少し広く（イカらしい太さ）
+                const scale = 1.0 + (headWidth - 1.0) * (1.0 - Math.pow(t, 0.6));
+                positions[i] *= scale;
+                positions[i + 1] *= scale;
+            }
+        }
+
+        mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+        // mesh.refreshBoundingInfo();
+    }
+
+    update(time, delta){
+
+        this.counter -= delta / 1000;
+        if (this.counter < 0){
+            this.target = new BABYLON.Vector3(Math.random()*2 -1, Math.random()*2 -1, Math.random()*2 -1);
+            this.control_velocity = this.target.subtract(this.root.position);
+            this.control_velocity.normalize();
+            this.control_velocity.scaleInPlace(this.genome.speed);
+            this.counter = 3 + 3 * Math.random();
+        }
+        this.control_velocity.scaleInPlace(0.99);
+
+        this.rotate_to(this.control_velocity, delta);
+
+        super.update(time, delta);
+    }
+
+    dispose(){
+        super.dispose();
+    }
+}

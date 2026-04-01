@@ -92,6 +92,10 @@ export class Effect_Extinction extends Effect {
             this.core_mesh.dispose();
             this.core_mesh = null;
         }
+        if (this.ps){
+            this.ps.dispose();
+            this.ps = null;
+        }
         super.dispose();
     }
 }

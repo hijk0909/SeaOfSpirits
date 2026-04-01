@@ -4,6 +4,32 @@ import { GameState } from '../GameState.js';
 
 export class MyMath {
 
+    static rotate_to_front( theta, phi) {
+        // 角度→ラジアン
+        const radTheta1 = theta * Math.PI / 180;
+        const radPhi1 = phi * Math.PI / 180;
+
+        // 直交座標化
+        const x = Math.cos(radTheta1) * Math.sin(radPhi1);
+        const y = Math.sin(radTheta1);
+        const z = Math.cos(radTheta1) * Math.cos(radPhi1);
+
+        // X軸を中心に回転 (90度)
+        const x2 = x;
+        const y2 = z;
+        const z2 = y;
+
+        // 極座標化
+        const radTheta2 = Math.asin(y2);
+        const radPhi2 = Math.atan2(x2, z2);
+
+        // ラジアン→角度
+        const theta2 = radTheta2 * 180 / Math.PI;
+        const phi2 = radPhi2 * 180 / Math.PI;
+
+        return { theta: theta2, phi: phi2 };
+    }
+
     static shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -85,21 +111,5 @@ export class MyMath {
         const clamped_y = clamp(org_top, y_pad, rh / scale - y_pad - y_height);
 
         return { left:clamped_x, top:clamped_y}
-    }
-
-    static is_occluded_by_terrain(target, scene) {
-        // const camera = this.scene.activeCamera;
-        const camera = GameState.camera;
-        const origin = camera.position.clone();
-        // const toEnemy = this.mesh.getAbsolutePosition ? this.mesh.getAbsolutePosition() : this.mesh.position.clone();
-        const dirVec = target.subtract(origin);
-        const dist = dirVec.length();
-        if (dist <= 0.0001) return false; // ほぼ同位置なら見えているとする
-        const dir = dirVec.scale(1 / dist); // normalize
-        const ray = new BABYLON.Ray(origin, dir, dist - 0.01);
-        const hit = scene.pickWithRay(ray, (mesh) => {
-            return mesh && mesh.isTerrain === true;
-        });
-        return hit && hit.pickedMesh && hit.pickedMesh.isTerrain === true;
     }
 }
