@@ -7,22 +7,22 @@ const TEST_COLOR = new BABYLON.Color3(0.0, 1.0, 0.0);
 
 // クジラ
 export class Spirit_Whale extends Spirit {
-    constructor(scene, class_name, type_name){    
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){    
+        super(scene, class_name, generation);
 
         // クラス遺伝子
-        this.genome.hp_max = 450;
+        this.genome.hp_max = 600;
         this.genome.hp_decrease = 0.01;
-        this.genome.disp_scale = 1.5;
-        this.genome.collision_radius = 2.8;
+        this.genome.disp_scale = 2.0;
+        this.genome.collision_radius = 3.0;
         this.genome.is_collidable = true;
-        this.genome.mass = 6.0;
-        this.genome.speed = 0.03;
+        this.genome.mass = 8.0;
+        this.genome.speed = 0.04;
         this.genome.accel = 0.2;
-        this.genome.rotate_speed = 2.0;
+        this.genome.rotate_speed = 2.5;
         this.genome.predation_classes = ["Spirit_Plankton"];
         this.genome.predation_socket = {front : 0.0, theta : -5.0 , phi : 0.0};
-        this.genome.predation_radius = 3.8;
+        this.genome.predation_radius = 4.0;
 
         // クラス固有の設定      
         this.base_alpha = 0.5;
@@ -36,8 +36,8 @@ export class Spirit_Whale extends Spirit {
         this.tmp_accel = new BABYLON.Vector3();
     }
 
-    create(params) {
-        super.create(params);
+    create(genome_modifier) {
+        super.create(genome_modifier);
         this.setupDepthClone();
     }
 
@@ -101,8 +101,8 @@ export class Spirit_Whale extends Spirit {
         this.attachment_definitions.push(structuredClone(def));
     }
 
-    activate(pos, params){
-        super.activate(pos, params);
+    activate(pos){
+        super.activate(pos);
     }
 
     deactivate(){

@@ -6,8 +6,8 @@ import { Spirit } from "./base_spirit.js";
 // 魚
 export class Spirit_Fish extends Spirit {
 
-    constructor(scene, class_name, type_name){
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){
+        super(scene, class_name, generation);
 
         // クラス遺伝子
         this.genome.hp_max = 30;
@@ -40,9 +40,9 @@ export class Spirit_Fish extends Spirit {
         this.tmp_deltaQuaternion = new BABYLON.Quaternion();
     }
 
-    create(params){
+    create(genome_modifier){
 
-        const speed_ratio = params?.speed ?? 1.0;
+        const speed_ratio = genome_modifier?.speed ?? 1.0;
         if (speed_ratio > 1.0){
             this.base_color.copyFromFloats(1.0, 0.6, 0.2);
         } else {
@@ -51,7 +51,7 @@ export class Spirit_Fish extends Spirit {
 
         this.eye_emissive.copyFromFloats(3.0, 5.0, 1.0);
 
-        super.create(params);
+        super.create(genome_modifier);
     }
 
     _create_body(){
@@ -65,8 +65,11 @@ export class Spirit_Fish extends Spirit {
         this.transform_to_streamline(this.mesh);
 
         const mat = new BABYLON.PBRMaterial("material", this.scene); 
-        // mat.albedoColor.copyFrom(this.base_color);
-        mat.albedoTexture = this.get_stripe_texture("#ffff00","#ff8000",10,1);
+        if (this.generation === 0){
+            mat.albedoColor.copyFrom(this.base_color);
+        } else {
+            mat.albedoTexture = this.get_stripe_texture("#ffff00","#ff8000",10,1);
+        }
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
@@ -129,8 +132,8 @@ export class Spirit_Fish extends Spirit {
         mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
     }
 
-    activate(pos, params){
-        super.activate(pos, params);
+    activate(pos){
+        super.activate(pos);
     }
 
     deactivate(){

@@ -64,7 +64,7 @@ export class MainScene extends Scene {
     create() {
         // console.log("GameScene.create");
         const scene = this.scene;
-        scene.clearColor = new BABYLON.Color4(0.0, 0.02, 0.08, 1.0);
+        scene.clearColor = new BABYLON.Color4(0.0, 0.03, 0.10, 1.0);
 
         // Light
         // フィールド全体を明るく照らす
@@ -97,7 +97,7 @@ export class MainScene extends Scene {
 
         // オブジェクト生成クラスの生成
         GameState.spawn = new Spawn(this.scene);
-        GameState.spawn_scheduler = new SpawnScheduler(this.scene);
+        GameState.spawn_scheduler = new SpawnScheduler(this.scene, GameState.spawn);
 
         // 実行クラスの生成
         this.exec = new Exec(this.scene);

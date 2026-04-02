@@ -17,65 +17,118 @@ export class Spawn {
     constructor(scene) {
         this.scene = scene;
 
-        this.pool = {
-            spirit_fish : [],
-            spirit_jelly : [],
-            spirit_plankton : [],
-            spirit_shark : [],
-            spirit_whale : [],
-            spirit_virus : [],
-            spirit_squid : [],
-            effect_extinction : [],
-            effect_predation : [],
-            effect_feeding : []
+        this.spirit_pools = {
+            fish : [],
+            jelly : [],
+            plankton : [],
+            shark : [],
+            whale : [],
+            virus : [],
+            squid : []
         };
 
-        this.ClassList = {
-            'Spirit_Fish'       : {class : Spirit_Fish,         pool : this.pool.spirit_fish,        list:GameState.spirits}, 
-            'Spirit_Jelly'      : {class : Spirit_Jelly,        pool : this.pool.spirit_jelly,       list:GameState.spirits},
-            'Spirit_Plankton'   : {class : Spirit_Plankton,     pool : this.pool.spirit_plankton,    list:GameState.spirits},
-            'Spirit_Shark'      : {class : Spirit_Shark,        pool : this.pool.spirit_shark,       list:GameState.spirits},
-            'Spirit_Whale'      : {class : Spirit_Whale,        pool : this.pool.spirit_whale,       list:GameState.spirits},
-            'Spirit_Virus'      : {class : Spirit_Virus,        pool : this.pool.spirit_virus,       list:GameState.spirits},
-            'Spirit_Squid'      : {class : Spirit_Squid,        pool : this.pool.spirit_squid,       list:GameState.spirits},
-            'Effect_Extinction' : {class : Effect_Extinction,   pool : this.pool.effect_extinction,  list:GameState.effects}, 
-            'Effect_Predation'  : {class : Effect_Predation,    pool : this.pool.effect_predation,   list:GameState.effects},
-            'Effect_Feeding'    : {class : Effect_Feeding,      pool : this.pool.effect_feeding,     list:GameState.effects}
-        }
-    }
+        this.effect_pool = [];
 
-    activate(class_name, type_name, pos, params = null){
-        const {class : Class, pool : pool, list : list} = this.ClassList[class_name];
+        this.SpiritClassList = {
+            'Spirit_Fish'       : {class : Spirit_Fish,         pool : this.spirit_pools.fish,        list:GameState.spirits}, 
+            'Spirit_Jelly'      : {class : Spirit_Jelly,        pool : this.spirit_pools.jelly,       list:GameState.spirits},
+            'Spirit_Plankton'   : {class : Spirit_Plankton,     pool : this.spirit_pools.plankton,    list:GameState.spirits},
+            'Spirit_Shark'      : {class : Spirit_Shark,        pool : this.spirit_pools.shark,       list:GameState.spirits},
+            'Spirit_Whale'      : {class : Spirit_Whale,        pool : this.spirit_pools.whale,       list:GameState.spirits},
+            'Spirit_Virus'      : {class : Spirit_Virus,        pool : this.spirit_pools.virus,       list:GameState.spirits},
+            'Spirit_Squid'      : {class : Spirit_Squid,        pool : this.spirit_pools.squid,       list:GameState.spirits}
+        }
+
+        this.EffectClassList = {
+            'Effect_Extinction' : Effect_Extinction,
+            'Effect_Predation'  : Effect_Predation,
+            'Effect_Feeding'    : Effect_Feeding
+        }
+
+        // ◆クラス状態管理オブジェクトの初期化
+        this.SpiritClasses = [
+            'Spirit_Fish',
+            'Spirit_Jelly',
+            'Spirit_Plankton',
+            'Spirit_Shark',
+            'Spirit_Whale',
+            'Spirit_Virus',
+            'Spirit_Squid'
+        ];
+        const DefaultSpiritClassState = () => ({
+            generation: 0,
+            genome_modifier: {},
+            max_num : 10,
+            period : 100,
+            counter : 0,
+            num_infected: 0,
+            mutation_threshold: 0,
+            lower_chain : [],
+            upper_chain : [],
+            lower_hp_min : 100,
+            period_min : 100
+        });
+        this.spirit_class_state = Object.fromEntries(
+            this.SpiritClasses.map(name => [name, DefaultSpiritClassState()])
+        );
+    } // End of constructor
+
+    activate_spirit(class_name, pos, generation = 0, genome_modifier = null){
+        const {class : Class, pool : pool, list : list} = this.SpiritClassList[class_name];
 
         let object;
-        const index = pool.findIndex(obj => obj.type_name === type_name);
+        const index = pool.findIndex(obj => obj.generation === generation);
         if ( index !== -1 ){
             object = pool.splice(index, 1)[0];
-            // console.log("[SPAWN] activate REUSE:",class_name, " - ", type_name, " length:", pool.length, list.length);
+            // console.log("[SPAWN] activate_spirit REUSE:",class_name, " - ", generation, " length:", pool.length, list.length);
         } else {
-            object = new Class(this.scene, class_name, type_name);
-            object.create(params);
+            object = new Class(this.scene, class_name, generation);
+            object.create(genome_modifier);
             Spirit.setupDepthCloneRenderOrder(this.scene); //半透明ボディ用 depthClone の処理順強制変更
-            // console.log("[SPAWN] activate NEW:",class_name, " - ", type_name, " length:", pool.length, list.length);
+            // console.log("[SPAWN] activate_spirit NEW:",class_name, " - ", generation, " length:", pool.length, list.length);
         }
-        object.activate(pos, params);
+        object.activate(pos);
         list.push(object);
-/*
-        for (let i = 0; i < list.length; i++){
-            if (list[i].class_name !== "Spirit_Plankton" && list[i].class_name !== "Spirit_Virus" && list[i].isCollidable === false){
-               console.log("list:",i, list[i].isCollidable, list[i].collision_disabled_timer, list[i].class_name);
-            }
-        }
- */
+
         return object;
     }
 
-    deactivate(object){
-        object.deactivate();
+    deactivate_spirit(object){
         const class_name = object.class_name;
-        const {pool : pool} = this.ClassList[class_name];
-        pool.push(object);
-        // console.log("[SPAWN] deactivate:", class_name, pool.length);
+        const {generation : generation} = this.spirit_class_state[class_name];
+        if (object.generation < generation){
+            object.dispose();
+            // console.log("[SPAWN] deactivate_spirit DISPOSE:", class_name, generation, object.generation);
+        } else {
+            object.deactivate();
+            const {pool : pool} = this.SpiritClassList[class_name];
+            pool.push(object);
+            // console.log("[SPAWN] deactivate_spirit POOLING:", class_name, pool.length);
+        }
+    }
+
+    activate_effect(class_name, pos, params = null){
+        const Class = this.EffectClassList[class_name];
+
+        let object;
+        const index = this.effect_pool.findIndex(obj => obj.class_name === class_name);
+        if ( index !== -1 ){
+            object = this.effect_pool.splice(index, 1)[0];
+            // console.log("[SPAWN] activate_effect REUSE:",class_name, " length:", this.effect_pool.length, GameState.effects.length);
+        } else {
+            object = new Class(this.scene, class_name);
+            // console.log("[SPAWN] activate_effect NEW:",class_name, " length:", this.effect_pool.length, GameState.effects.length);
+        }
+        object.activate(pos, params);
+        GameState.effects.push(object);
+
+        return object;
+    }
+
+    deactivate_effect(object){
+        object.deactivate();
+        this.effect_pool.push(object);
+        // console.log("[SPAWN] deactivate_effect:", object.class_name, this.effect_pool.length);
     }
 
     dispose(){
@@ -97,34 +150,18 @@ export class Spawn {
 } // End of Spawn
 
 export class SpawnScheduler {
-    constructor(){
-        this.max_plankton = 80;
-        this.period_plankton = 1000;
-        this.count_plankton = this.period_plankton;
+    constructor(scene, spawn){
+        this.scene = scene;
+        this.spawn = spawn;
+        this.state = spawn.spirit_class_state;
 
-        this.max_virus = 30;
-        this.period_virus = 1130;
-        this.count_virus = this.period_virus;
+        this.mutation_counter = 0;
+        this.mutation_period = 10.0;
 
-        this.max_fish = 50;
-        this.period_fish = 3000;
-        this.count_fish = this.period_fish;
+        this.ecosystem_counter = 0;
+        this.ecosystem_period = 23.0;
 
-        this.max_jelly = 20;
-        this.period_jelly = 13500;
-        this.count_jelly = this.period_jelly;
-
-        this.max_squid = 10;
-        this.period_squid = 31000;
-        this.count_squid = this.period_squid;
-
-        this.max_shark = 3;
-        this.period_shark = 81900;
-        this.count_shark = this.period_shark;
-
-        this.max_whale = 2;
-        this.period_whale = 198000;
-        this.count_whale = this.period_whale;
+        this.initialize_class_state();
     }
 
     random_surface_position(radius){
@@ -144,28 +181,105 @@ export class SpawnScheduler {
     initial_placement(){    
         for(let i=0; i<10; i++){
             const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate("Spirit_Plankton", i, pos);
+            GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
+/*
         for(let i=0; i<2; i++){
             const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate("Spirit_Shark", i, pos);
+            GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
         }
-        for(let i=0; i<10; i++){
+ */
+        for(let i=0; i<1; i++){
             const pos = this.random_surface_position(5.0);
-            GameState.spawn.activate("Spirit_Fish", i, pos);
+            GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
         }
+/*
         for(let i=0; i<5; i++){
             const pos = this.random_surface_position(3.0);
-            GameState.spawn.activate("Spirit_Jelly", i, pos);
+            GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
         }
         for(let i=0; i<1; i++){
             const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate("Spirit_Whale", i, pos);
+            GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
         }
         for(let i=0; i<1; i++){
             const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate("Spirit_Squid", i, pos);
+            GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
         }
+ */
+    }
+
+    initialize_class_state(){
+
+        let st;
+
+        st = this.spawn.spirit_class_state["Spirit_Plankton"];
+        st.lower_chain = [];
+        st.upper_chain = ["Spirit_Fish", "Spirit_Jelly", "Spirit_Squid", "Spirit_Whale"]
+        st.max_num = 80;
+        st.period = 1.0;
+        st.count = 0;
+        st.lower_hp_min = 0.0;
+        st.period_min = 1.0;
+
+        st = this.spawn.spirit_class_state["Spirit_Virus"];
+        st.lower_chain = ["Spirit_Fish", "Spirit_Jelly", "Spirit_Shark", "Spirit_Squid", "Spirit_Whale"];
+        st.upper_chain = [];
+        st.max_num = 30;
+        st.period = 0.0;
+        st.count = 0;
+        st.lower_hp_min = 3000;
+        st.period_min = 1.13;
+
+        st = this.spawn.spirit_class_state["Spirit_Fish"];
+        st.lower_chain = ["Spirit_Plankton"];
+        st.upper_chain = ["Spirit_Squid", "Spirit_Shark"];
+        st.max_num = 50;
+        st.period = 3.0;
+        st.count = 0;
+        st.lower_hp_min = 250;
+        st.period_min = 3.0;
+//        st.generation = 1;
+//        st.genome_modifier = { speed : 2.0};
+
+        st = this.spawn.spirit_class_state["Spirit_Jelly"];
+        st.lower_chain = ["Spirit_Plankton"];
+        st.upper_chain = ["Spirit_Squid", "Spirit_Shark"];
+        st.max_num = 20;
+        st.period = 0.0;
+        st.count = 0;
+        st.lower_hp_min = 250;
+        st.period_min = 10.5;
+
+        st = this.spawn.spirit_class_state["Spirit_Squid"];
+        st.lower_chain = ["Spirit_Plankton", "Spirit_Fish", "Spirit_Jelly"];
+        st.upper_chain = ["Spirit_Shark"];
+        st.max_num = 10;
+        st.period = 0.0;
+        st.count = 0;
+        st.lower_hp_min = 1500;
+        st.period_min = 31.0;
+        
+        st = this.spawn.spirit_class_state["Spirit_Shark"];
+        st.lower_chain = ["Spirit_Fish", "Spirit_Squid"];
+        st.upper_chain = [];
+        st.max_num = 3;
+        st.period = 0.0;
+        st.count = 0;
+        st.lower_hp_min = 1200;
+        st.period_min = 81.9;
+//        st.generation = 1;
+//        st.genome_modifier = {speed : 2.0, accel : 2.0, predation_radius : 2.0};
+ 
+
+        st = this.spawn.spirit_class_state["Spirit_Whale"];
+        st.lower_chain = ["Spirit_Plankton"];
+        st.upper_chain = [];
+        st.max_num = 2;
+        st.period = 0.0;
+        st.count = 0;
+        st.lower_hp_min = 350;
+        st.period_min = 198.0;
     }
 
     count_class(class_name) {
@@ -173,72 +287,68 @@ export class SpawnScheduler {
     }
 
     update(time, delta){
-        if (!GameState.spawn) return;
+        if (!this.spawn) return;
 
-        this.count_plankton -= delta;
-        if (this.count_plankton < 0){
-            this.count_plankton = this.period_plankton;
-            if (this.count_class("Spirit_Plankton") < this.max_plankton){
-                const pos = this.random_surface_position(20.0);
-                GameState.spawn.activate("Spirit_Plankton", 0, pos);
+        // ◆ 突然変異を起こす
+        this.mutation_counter += delta / 1000;
+        if (this.mutation_counter > this.mutation_period){
+            this.mutation_counter = 0;
+            for (const cls of this.spawn.SpiritClasses){
+                this.cause_mutation(cls);
             }
         }
 
-        this.count_virus -= delta;
-        if (this.count_virus < 0){
-            this.count_virus = this.period_virus;
-            if (this.count_class("Spirit_Virus") < this.max_virus){
-                const pos = this.random_surface_position(20.0);
-                GameState.spawn.activate("Spirit_Virus", 0, pos);
+        // ◆ 生態系（食物連鎖）を調整する
+        this.ecosystem_counter += delta / 1000;
+        if (this.ecosystem_counter > this.ecosystem_period){
+            this.ecosystem_counter = 0;
+            for (const cls of this.spawn.SpiritClasses){
+                this.regulate_ecosystem(cls);
             }
         }
 
-        this.count_fish -= delta;
-        if (this.count_fish < 0){
-            this.count_fish = this.period_fish;
-            if (this.count_class("Spirit_Fish") < this.max_fish){
-                const pos = this.random_surface_position(20.0);
-                GameState.spawn.activate("Spirit_Fish", "SPEED", pos, {speed : 2.0});
-            }
-        }
-
-        this.count_jelly -= delta;
-        if (this.count_jelly < 0){
-            this.count_jelly = this.period_jelly;
-            if (this.count_class("Spirit_Jelly") < this.max_jelly){
-                const pos = this.random_surface_position(20.0);
-                GameState.spawn.activate("Spirit_Jelly", 0, pos);
-            }
-        }
-
-        this.count_squid -= delta;
-        if (this.count_squid < 0){
-            this.count_squid = this.period_squid;
-            if (this.count_class("Spirit_Squid") < this.max_squid){
-                const pos = this.random_surface_position(20.0);
-                GameState.spawn.activate("Spirit_Squid", 0, pos);
-            }
-        }
-
-        this.count_shark -= delta;
-        if (this.count_shark < 0){
-            this.count_shark = this.period_shark;
-            if (this.count_class("Spirit_Shark") < this.max_shark){
-                const pos = this.random_surface_position(20.0);
-                GameState.spawn.activate("Spirit_Shark", "SPEED", pos, {speed : 2.0, accel : 2.0,
-//                    predation_radius : 2.0, predation_classes : ["Spirit_Fish", "Spirit_Jelly"]});
-                    predation_radius : 2.0});
+        // ◆ 一定間隔での生成
+        for (const cls of this.spawn.SpiritClasses){
+            const st = this.spawn.spirit_class_state[cls];
+                if (st.period > 0){
+                st.count += delta / 1000;
+                if (st.count > st.period){
+                    st.count = 0;
+                    if (this.count_class(cls) < st.max_num){
+                        const pos = this.random_surface_position(20.0);
+                        GameState.spawn.activate_spirit(cls, pos, st.generation, st.genome_modifier);
+                    }
                 }
-        }
-
-        this.count_whale -= delta;
-        if (this.count_whale < 0){
-            this.count_whale = this.period_whale;
-            if (this.count_class("Spirit_Whale") < this.max_whale){
-                const pos = this.random_surface_position(20.0);
-                GameState.spawn.activate("Spirit_Whale", 0, pos);
             }
-        }        
+        }
+    }
+
+    cause_mutation(cls){
+        // ウィルスによる感染が一定数を超えた時に
+        // 脅威（淘汰圧）に応じて
+        // genome_modifier を一部乱数的に変更し
+        // ウィルス感染数をリセットし
+        // 世代番号を一つ増やす
+        const st = this.state[cls];
+    }
+
+    regulate_ecosystem(cls){
+        // 捕食する側（食物連鎖の下位）を調べ
+        // 潤沢なら定期生成間隔を短くし
+        // 貧弱なら定期生成間隔を長くする
+        const st = this.state[cls];
+        const sum_hp_lower = GameState.spirits.reduce(
+            (sum, s) => st.lower_chain.includes(s.class_name) ? sum + s.genome.hp_max : sum,
+            0
+        );
+
+        // console.log("[regulate_ecosystem]:", cls, sum_hp_lower, st.lower_hp_min);
+
+        if (sum_hp_lower > st.lower_hp_min){
+            const period = Math.max(st.period_min / 2.0, st.period_min / (sum_hp_lower / st.lower_hp_min))
+            st.period = period;
+            console.log("[regulate_ecosystem] update period:", cls, sum_hp_lower, period);
+        }
     }
 
     dispose(){

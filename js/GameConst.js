@@ -2,8 +2,8 @@
 
 export const GLOBALS = {
 
-    VERSION : "0.4",
-    DATE : "2026.4.1",
+    VERSION : "0.4a",
+    DATE : "2026.4.2",
 
     DELTA : 16.6667,
     DELTA_CLAMP : 20,
@@ -29,9 +29,10 @@ export const GLOBALS = {
     },
 
     COLLIDABLE : {
-        IMPULSE_VELOCITY_RATIO : 2.6,
+        IMPULSE_VELOCITY_RATIO : 3.0,
         CONTROL_LOSS_THRESHOLD : 0.1,
         MAX_EXTERNAL_VELOCITY : 0.5,
+        EXTERNAL_VELOCITY_DAMPING : 0.89,
         OVERLAP_RESOLUTION_RATIO : 0.8,
         OVERLAP_RESOLUTION_THRESHOLD : 0.1,
         MAX_REPULSE_VELOCITY : 0.6

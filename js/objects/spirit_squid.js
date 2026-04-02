@@ -7,13 +7,13 @@ import { MyMath } from "../utils/MathUtils.js";
 // クラゲ
 export class Spirit_Squid extends Spirit {
 
-    constructor(scene, class_name, type_name){
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){
+        super(scene, class_name, generation);
 
         // クラス遺伝子
         this.genome.hp_max = 120;
         this.genome.hp_decrease = 0.026;
-        this.genome.disp_scale = 1.3;
+        this.genome.disp_scale = 1.15;
         this.genome_collision_radius = 0.25;
         this.genome_is_collidable = true;
         this.genome.mass = 1.8;
@@ -26,12 +26,14 @@ export class Spirit_Squid extends Spirit {
         // クラス固有のパラメータ
         this.counter = 0;
         this.target = new BABYLON.Vector3(0,0,0);
+        this.base_color = new BABYLON.Color3(0.1, 0.1, 1.0);
+        this.tentacle_color = new BABYLON.Color3(0.1, 1.0, 1.0);
         this.eye_emissive = new BABYLON.Color3();
     }
 
-    create(params){
-        this.eye_emissive.copyFromFloats(1.0, 5.0, 1.0);
-        super.create(params);
+    create(genome_modifier){
+        this.eye_emissive.copyFromFloats(0.0, 3.0, 3.0);
+        super.create(genome_modifier);
         this.setupDepthClone();
     }
 
@@ -46,7 +48,7 @@ export class Spirit_Squid extends Spirit {
         this.transform_to_squid(this.mesh);
 
         const mat = new BABYLON.PBRMaterial("spirit_squid_material", this.scene); 
-        mat.albedoColor = new BABYLON.Color3(1.0, 0.5, 0.2);
+        mat.albedoColor = this.base_color;
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
@@ -59,10 +61,10 @@ export class Spirit_Squid extends Spirit {
 
         def = {
             name: "Attachment_Tentacle",
-            params: {segmentCont : 3, length : 0.20, thicknessBase : 0.3, thicknessTip : 0.02}
+            params: {segmentCont : 3, length : 0.20, thicknessBase : 0.3, thicknessTip : 0.02, color : this.tentacle_color}
         };
         for (let i = 0; i < 360; i += 60){
-            const {theta, phi} = MyMath.rotate_to_front(-55, i);
+            const {theta, phi} = MyMath.rotate_to_front(-45, i);
             def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
             this.attachment_definitions.push(structuredClone(def));
         }
@@ -79,7 +81,7 @@ export class Spirit_Squid extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:+0.2, thetaDeg:0, phiDeg: +25},
-            params: {bottomScale : 1.2, height : 0.8, twist : 90 }
+            params: {bottomScale : 1.2, height : 0.8, twist : 90, color : this.base_color }
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -87,8 +89,8 @@ export class Spirit_Squid extends Spirit {
 
     }
 
-    activate(pos, params){
-        super.activate(pos, params);
+    activate(pos){
+        super.activate(pos);
     }
 
     deactivate(){

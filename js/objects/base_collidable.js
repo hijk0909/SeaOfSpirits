@@ -23,9 +23,9 @@ export class Collidable extends Drawable {
 
         this.control_velocity = new BABYLON.Vector3();
         this.external_velocity = new BABYLON.Vector3();
-        this.external_velocity_damping = 0.95;
-        this.repulse_velocity = new BABYLON.Vector3();
-        this.repulse_velocity_damping = 0.70;
+        // this.external_velocity_damping = 0.95;
+        // this.repulse_velocity = new BABYLON.Vector3();
+        // this.repulse_velocity_damping = 0.70;
         this.environment_velocity = new BABYLON.Vector3();
         this.velocity = new BABYLON.Vector3();
 
@@ -178,7 +178,7 @@ export class Collidable extends Drawable {
             this.root.position.addInPlace(this.velocity);
 
             // 外部からの速度の減衰
-            this.external_velocity.scaleInPlace(this.external_velocity_damping);
+            this.external_velocity.scaleInPlace(GLOBALS.COLLIDABLE.EXTERNAL_VELOCITY_DAMPING);
             // this.repulse_velocity.scaleInPlace(this.repulse_velocity_damping);
 
             // ◆連続衝突の一時回避
@@ -186,14 +186,14 @@ export class Collidable extends Drawable {
                 this.collision_disabled_timer -= delta / 1000;
                 if (this.collision_disabled_timer < 0){
                     this.isCollidable = this.isCollidable || this.isCollidable_save;
-                    console.log("[COL] COLLIDABLE Recover", this.isCollidable);
+                    // console.log("[COL] COLLIDABLE Recover", this.isCollidable);
                 }
             } else {
                 if (this.collided){
                     this.collided = false;
                     this.collision_counter += 2;
                     if (this.collision_counter > 10){
-                        console.log("[COL] TOO MANY COLLISIONS", this.isCollidable);
+                        // console.log("[COL] TOO MANY COLLISIONS", this.isCollidable);
                         this.collision_disabled_timer = COLLISION_DISABLED_PERIOD;
                         this.isCollidable_save = this.isCollidable;
                         this.isCollidable = false;

@@ -14,8 +14,8 @@ const DRIFTING_ALBEDO = new BABYLON.Color3(0.6, 0, 0.3);
 // ウイルス
 export class Spirit_Virus extends Spirit {
 
-    constructor(scene, class_name, type_name){
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){
+        super(scene, class_name, generation);
 
         // クラス遺伝子
         this.genome.hp_max = 10;
@@ -27,7 +27,7 @@ export class Spirit_Virus extends Spirit {
         // クラス固有の設定      
         this.infecting = false;
         this.infection_classes = ["Spirit_Fish", "Spirit_Jelly", "Spirit_Shark", "Spirit_Squid", "Spirit_Whale"];
-        this.infectionRadius = 0.2; 
+        this.infectionRadius = 0.16;
         this.infectionObject = null;
         this.infectionMattrix = null;
 
@@ -37,8 +37,8 @@ export class Spirit_Virus extends Spirit {
         this.tmpPos      = new BABYLON.Vector3();
     }
 
-    create(params){
-        super.create(params);
+    create(genome_modifier){
+        super.create(genome_modifier);
     }
 
     _create_body(){
@@ -80,11 +80,11 @@ export class Spirit_Virus extends Spirit {
         this.mesh.material = mat;
     }
 
-    activate(pos, params){
+    activate(pos){
         this.infecting = false;
         this.mesh.albedoColor  = DRIFTING_ALBEDO;
         this.set_emissive_base(DRIFTING_EMISSIVE);
-        super.activate(pos, params);
+        super.activate(pos);
     }
 
     deactivate(){

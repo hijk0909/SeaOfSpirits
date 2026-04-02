@@ -7,8 +7,8 @@ import { MyMath } from "../utils/MathUtils.js";
 // クラゲ
 export class Spirit_Jelly extends Spirit {
 
-    constructor(scene, class_name, type_name){
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){
+        super(scene, class_name, generation);
 
         // クラス遺伝子
         this.genome.hp_max = 80;
@@ -27,8 +27,8 @@ export class Spirit_Jelly extends Spirit {
         this.target = new BABYLON.Vector3(0,0,0);
     }
 
-    create(params){
-        super.create(params);
+    create(genome_modifier){
+        super.create(genome_modifier);
     }
 
     _create_body(){
@@ -54,9 +54,9 @@ export class Spirit_Jelly extends Spirit {
 
         def = {
             name: "Attachment_Tentacle",
-            params: {segmentCont : 4, length : 0.30, thicknessBase : 0.3, thicknessTip : 0.02}
+            params: {segmentCont : 4, length : 0.30, thicknessBase : 0.2, thicknessTip : 0.06}
         };
-        for (let i = 0; i < 360; i += 90){
+        for (let i = 0; i < 360; i += 120){
             const {theta, phi} = MyMath.rotate_to_front(-30, i);
             def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
             this.attachment_definitions.push(structuredClone(def));
@@ -66,7 +66,7 @@ export class Spirit_Jelly extends Spirit {
             name: "Attachment_Spine",
             params: {diameterBottom : 0.15, height :0.24}
         };
-        for (let i = 0; i < 360; i += 120){
+        for (let i = 0; i < 360; i += 90){
             const {theta, phi} = MyMath.rotate_to_front(+60, i);
             def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
             this.attachment_definitions.push(structuredClone(def));
@@ -74,8 +74,8 @@ export class Spirit_Jelly extends Spirit {
 
     }
 
-    activate(pos, params){
-        super.activate(pos, params);
+    activate(pos){
+        super.activate(pos);
     }
 
     deactivate(){

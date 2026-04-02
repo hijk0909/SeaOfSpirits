@@ -6,8 +6,8 @@ const MANUAL_EMIT_COUNT = 40;
 
 export class Effect_Predation extends Effect {
 
-    constructor(scene, class_name, type_name){
-        super(scene, class_name, type_name);
+    constructor(scene, class_name){
+        super(scene, class_name);
         this.ps = null;
         this.size_ratio = 1.0;
 
@@ -16,9 +16,10 @@ export class Effect_Predation extends Effect {
         this.core_life = 1.0;
         this.core_emissiveColor = new BABYLON.Color3(1.0, 0.7, 0.4);
 
+        this.create();
     }
 
-    create(params){
+    create(){
         this.particleTexture = GameState.asset.texture.particle;
 
         // 爆心（コア）
@@ -66,8 +67,6 @@ export class Effect_Predation extends Effect {
 
         this.ps = ps;
         this.ps.start(); //再利用時にはstart()を呼ばない
-
-        super.create(params);
     }
 
     activate(pos, params){

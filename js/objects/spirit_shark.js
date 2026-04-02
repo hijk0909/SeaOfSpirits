@@ -5,8 +5,8 @@ import { Spirit } from "./base_spirit.js";
 
 // サメ
 export class Spirit_Shark extends Spirit {
-    constructor(scene, class_name, type_name){    
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){    
+        super(scene, class_name, generation);
 
         // クラス遺伝子
         this.genome.disp_scale = 1.0;
@@ -43,8 +43,8 @@ export class Spirit_Shark extends Spirit {
         this.tmp_controlNorm = new BABYLON.Vector3();
     }
 
-    create(params){
-        const speed_ratio = params?.speed ?? 1.0;
+    create(genome_modifier){
+        const speed_ratio = genome_modifier?.speed ?? 1.0;
         if (speed_ratio > 1.0){
             this.base_color.copyFromFloats(1.0, 0.3, 0.9);
         } else {
@@ -53,7 +53,7 @@ export class Spirit_Shark extends Spirit {
 
         this.eye_emissive.copyFromFloats(6.0, 0.0, 0.0);
 
-        super.create(params);
+        super.create(genome_modifier);
     }
 
     _create_body(){
@@ -106,11 +106,11 @@ export class Spirit_Shark extends Spirit {
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:+45, phiDeg: 180};
-        def.params = {bottomScale : 1.0, height : 1.5, color : this.base_color};
+        def.params = {bottomScale : 0.6, height : 1.1, color : this.base_color};
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:-35, phiDeg: 180};
-        def.params = {bottomScale : 1.0, height : 1.5, color : this.base_color};
+        def.params = {bottomScale : 0.6, height : 1.1, color : this.base_color};
         this.attachment_definitions.push(structuredClone(def));
         
         def = {
@@ -123,8 +123,8 @@ export class Spirit_Shark extends Spirit {
         this.attachment_definitions.push(structuredClone(def));
     }
 
-    activate(pos, params){
-        super.activate(pos, params);
+    activate(pos){
+        super.activate(pos);
     }
 
     deactivate(){

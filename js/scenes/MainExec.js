@@ -17,7 +17,7 @@ export class Exec {
     }
 
     update(time, delta){
-        // ◆定期的なオブジェクト生成
+        // ◆定期的なオブジェクト生成（生態系の更新）
         GameState.spawn_scheduler.update(time, delta);
 
         // ◆プレイヤー操作
@@ -32,7 +32,7 @@ export class Exec {
 
             spirit.update(time, delta);
             if (!spirit.alive) {
-                GameState.spawn.deactivate(spirit);
+                GameState.spawn.deactivate_spirit(spirit);
                 GameState.spirits.splice(i, 1);
                 continue;
             }
@@ -65,10 +65,10 @@ export class Exec {
                     obj1.hp = Math.min(obj1.genome.hp_max, obj1.hp + obj2.hp); //[TEST] 捕食相手のHPを取得
 
                     if (obj2.class_name === "Spirit_Plankton"){
-                        GameState.spawn.activate("Effect_Feeding", "", obj2.root.position, {size : obj2.collisionRadius});
+                        GameState.spawn.activate_effect("Effect_Feeding", obj2.root.position, {size : obj2.collisionRadius});
                         GameState.asset.se.feeding.play_3D(obj2.root.position);
                     } else {
-                        GameState.spawn.activate("Effect_Predation", "", obj2.root.position, {size : obj2.collisionRadius});
+                        GameState.spawn.activate_effect("Effect_Predation", obj2.root.position, {size : obj2.collisionRadius});
                         GameState.asset.se.predation.play_3D(obj2.root.position);
                     }
 
@@ -84,7 +84,7 @@ export class Exec {
 
             effect.update(time, delta);
             if (!effect.alive) {
-                GameState.spawn.deactivate(effect);
+                GameState.spawn.deactivate_effect(effect);
                 GameState.effects.splice(i, 1);
                 continue;
             }
@@ -160,12 +160,12 @@ export class Exec {
         GameState.bubbles.add_bubble(obj2.root.position);
 
         // ヒットした時に対象を光らせる
-        // if (this.tmpImpulse.length() > 0.001){
-            obj1.flash();
-            obj2.flash();
+        obj1.flash();
+        obj2.flash();
+        if (this.tmpImpulse.length() > 0.1){
             GameState.asset.se.collision.play_3D(obj1.root.position);
             // console.log("impulse:", impulse.length(), dot);
-        // }
+        }
         return this.tmpImpulse;
     }
 } // End of Exec

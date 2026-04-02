@@ -6,8 +6,8 @@ import { Spirit } from "./base_spirit.js";
 // プランクトン
 export class Spirit_Plankton extends Spirit {
 
-    constructor(scene, class_name, type_name){
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){
+        super(scene, class_name, generation);
 
         // クラス遺伝子
         this.genome.hp_max = 10;
@@ -21,8 +21,8 @@ export class Spirit_Plankton extends Spirit {
         this.num_spines = 13;
     }
 
-    create(params){
-        super.create(params);
+    create(genome_modifier){
+        super.create(genome_modifier);
     }
 
     _create_body(){
@@ -53,8 +53,8 @@ export class Spirit_Plankton extends Spirit {
         }
     }
 
-    activate(pos, params){
-        super.activate(pos, params);
+    activate(pos){
+        super.activate(pos);
     }
 
     deactivate(){

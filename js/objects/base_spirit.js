@@ -14,9 +14,10 @@ const LOD_THRESHOLD = 12.0;
 
 export class Spirit extends Collidable {
 
-    constructor(scene, class_name, type_name = ""){
-        super(scene, class_name, type_name);
+    constructor(scene, class_name, generation){
+        super(scene, class_name);
 
+        this.generation = generation;
         this.genome = {
             hp_max : 100,
             hp_decrease : 0.1,
@@ -58,7 +59,7 @@ export class Spirit extends Collidable {
     }
 
     // genomeの変更
-    modify_genome(params){
+    modify_genome(genome_modifier){
         const genomeOps = {
             hp_max:                 (g, v) => g.hp_max   *= v,
             mass:                   (g, v) => g.mass     *= v,
@@ -68,9 +69,9 @@ export class Spirit extends Collidable {
             predation_classes:      (g, v) => g.predation_classes = v
         };
 
-        for (const key in params) {
+        for (const key in genome_modifier) {
             if (genomeOps[key]) {
-                genomeOps[key](this.genome, params[key]);
+                genomeOps[key](this.genome, genome_modifier[key]);
             }
         }
     }
@@ -86,9 +87,9 @@ export class Spirit extends Collidable {
         this.rotate_speed = this.genome.rotate_speed;
     }
 
-    create(params){
+    create(genome_modifier){
         // genomeの修正
-        this.modify_genome(params);
+        this.modify_genome(genome_modifier);
 
         // 属性の設定
         this.set_property_from_genome();
@@ -149,14 +150,14 @@ export class Spirit extends Collidable {
         // アタッチメントの定義（継承先でオーバーライド）
     }
 
-    activate(pos, params){
+    activate(pos){
         this.set_property_from_genome();
 
         this.root.setEnabled(true);
         this.root.position.copyFrom(pos);
         this.set_alpha(this.base_alpha);
 
-        super.activate(pos, params);
+        super.activate(pos);
     }
 
     deactivate(){
@@ -512,7 +513,7 @@ get_perlin_texture(color1, color2, repeat = false) {
             if (this.hp < 0){
                 this.set_dying();
                 // console.log("starvation:", this.class_name);
-                GameState.spawn.activate("Effect_Extinction", "", this.root.position, { size : this.collisionRadius});
+                GameState.spawn.activate_effect("Effect_Extinction", this.root.position, { size : this.collisionRadius});
                 GameState.asset.se.extinction.play_3D(this.root.position);
             }
 
