@@ -11,7 +11,7 @@ export class Spirit_Fish extends Spirit {
 
         // クラス遺伝子
         this.genome.hp_max = 30;
-        this.genome.hp_decrease = 0.005;
+        this.genome.hp_decrease = 0.01;
         this.genome.collision_radius = 0.30;
         this.genome.mass = 1.0;
         this.genome.speed = 0.06;

@@ -14,10 +14,10 @@ export class Spirit_Shark extends Spirit {
         this.genome.is_collidable = true;
         this.genome.mass = 2.5;
         this.genome.hp_max = 300;
-        this.genome.hp_decrease = 0.08;
-        this.genome.rotate_speed = 1.8;
-        this.genome.speed = 0.1;
-        this.genome.accel = 0.001;
+        this.genome.hp_decrease = 0.13;
+        this.genome.rotate_speed = 1.6;
+        this.genome.speed = 0.11;
+        this.genome.accel = 0.0012;
         this.genome.predation_classes = ["Spirit_Fish", "Spirit_Squid"];
         this.genome.predation_socket = {front : 0.0, theta : -5.0 , phi : 0.0};
         this.genome.predation_radius = 0.5;
@@ -31,7 +31,8 @@ export class Spirit_Shark extends Spirit {
         this.chasePeriod = 5.0;
         this.chaseTimer = this.chasePeriod;
         this.base_color = new BABYLON.Color3();
-        this.base_color_2 = new BABYLON.Color3(0.7, 0.7, 0.7);
+        this.texture_color_1 = new BABYLON.Color3();
+        this.texture_color_2 = new BABYLON.Color3();
         this.eye_emissive = new BABYLON.Color3();
 
         // テンポラリ変数
@@ -46,9 +47,13 @@ export class Spirit_Shark extends Spirit {
     create(genome_modifier){
         const speed_ratio = genome_modifier?.speed ?? 1.0;
         if (speed_ratio > 1.0){
-            this.base_color.copyFromFloats(1.0, 0.3, 0.9);
+            this.base_color.copyFromFloats(1.0, 0.0, 0.0);
+            this.texture_color_1.copyFromFloats(1.0, 0.3, 0.0);
+            this.texture_color_2.copyFromFloats(0.6, 1.0, 0.2);
         } else {
-            this.base_color.copyFromFloats(0.8, 0.8, 0.8);
+            this.base_color.copyFromFloats(0.0, 1.0, 1.0);
+            this.texture_color_1.copyFromFloats(0.3, 0.8, 1.0);
+            this.texture_color_2.copyFromFloats(0.2, 0.5, 0.4);
         }
 
         this.eye_emissive.copyFromFloats(6.0, 0.0, 0.0);
@@ -65,8 +70,8 @@ export class Spirit_Shark extends Spirit {
         this.mesh.parent = this.root;
 
         const mat = new BABYLON.PBRMaterial("material", this.scene); 
-        // mat.albedoColor.copyFrom(this.base_color);
-        mat.albedoTexture = this.get_perlin_texture(this.base_color, this.base_color_2, 23);
+        mat.albedoTexture = this.get_perlin_texture(this.texture_color_1, this.texture_color_2);
+
         mat.metallic = 0.8;
         mat.roughness = 1.0;
         mat.alpha = 1.0;

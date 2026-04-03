@@ -156,9 +156,6 @@ export class Collidable extends Drawable {
     update(time, delta){
 
         if (!this.dying){
-            // 速度の計算
-            // const control_ratio = BABYLON.Scalar.Clamp(1 - this.external_velocity.length() / GLOBALS.COLLIDABLE.CONTROL_LOSS_THRESHOLD, 0, 1);
-
             // 外部速度の制限
             if (this.velocity.length() > GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY){
                 this.velocity.normalize();

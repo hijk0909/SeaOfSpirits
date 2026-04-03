@@ -61,6 +61,7 @@ export class Exec {
                     // console.log("predation:", obj1.class_name, obj2.class_name);
                     // obj1.control_velocity.scaleInPlace(0.5); //[TEST]捕食したら減速
                     obj2.set_dying();
+                    GameState.spawn.spirit_class_state[obj2.class_name].num_preyed += 1;
 
                     obj1.hp = Math.min(obj1.genome.hp_max, obj1.hp + obj2.hp); //[TEST] 捕食相手のHPを取得
 
@@ -162,7 +163,7 @@ export class Exec {
         // ヒットした時に対象を光らせる
         obj1.flash();
         obj2.flash();
-        if (this.tmpImpulse.length() > 0.1){
+        if (this.tmpImpulse.length() > 0.2){
             GameState.asset.se.collision.play_3D(obj1.root.position);
             // console.log("impulse:", impulse.length(), dot);
         }

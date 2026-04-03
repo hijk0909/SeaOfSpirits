@@ -18,10 +18,18 @@ export class Spirit_Plankton extends Spirit {
         this.genome.mass = 0.5;
 
         // クラス固有のパラメータ
-        this.num_spines = 13;
+        this.base_color = new BABYLON.Color3();
+        this.num_spines = 7;
     }
 
     create(genome_modifier){
+        if (this.generation === 0){
+            this.base_color.copyFromFloats(0.0, 1.0, 0.0);
+            this.num_spines = 13;
+        } else {
+            this.base_color.copyFromFloats(0.8, 1.0, 0.4);
+            this.num_spines = 19;
+        }
         super.create(genome_modifier);
     }
 
@@ -34,7 +42,7 @@ export class Spirit_Plankton extends Spirit {
         this.mesh.parent = this.root;
 
         const mat = new BABYLON.PBRMaterial("material", this.scene); 
-        mat.albedoColor = new BABYLON.Color3(0.0, 1.0, 0.0);
+        mat.albedoColor.copyFrom(this.base_color);
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = 1.0;

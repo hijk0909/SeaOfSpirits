@@ -20,14 +20,27 @@ export class Spirit_Jelly extends Spirit {
         this.genome.speed = 0.05;
         this.genome.predation_classes = ["Spirit_Plankton"];
         this.genome.predation_socket = {front : 0.0, theta : 0.0 , phi : 0.0};
-        this.genome.predation_radius = 1.0;
+        this.genome.predation_radius = 0.5;
 
         // クラス固有のパラメータ
         this.counter = 0;
+        this.base_color = new BABYLON.Color3();
         this.target = new BABYLON.Vector3(0,0,0);
     }
 
     create(genome_modifier){
+
+        const speed_ratio = genome_modifier?.speed ?? 1.0;
+        if (speed_ratio > 1.0){
+            if (this.generation >= 2){
+                this.base_color.copyFromFloats(1.0, 0.4, 0.0);
+            } else {
+                this.base_color.copyFromFloats(0.8, 1.0, 0.5);
+            }
+        } else {
+            this.base_color.copyFromFloats(0.0, 0.5, 1.0);
+        }
+
         super.create(genome_modifier);
     }
 
@@ -42,7 +55,7 @@ export class Spirit_Jelly extends Spirit {
         this.transform_to_jelly(this.mesh);
 
         const mat = new BABYLON.PBRMaterial("spirit_2_material", this.scene); 
-        mat.albedoColor = new BABYLON.Color3(0.0, 0.5, 1.0);
+        mat.albedoColor.copyFrom(this.base_color);
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         this.mesh.material = mat;

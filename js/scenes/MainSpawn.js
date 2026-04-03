@@ -62,11 +62,13 @@ export class Spawn {
             period : 100,
             counter : 0,
             num_infected: 0,
+            num_starved: 0,
+            num_preyed: 0,
             mutation_threshold: 0,
             lower_chain : [],
             upper_chain : [],
-            lower_hp_min : 100,
-            period_min : 100
+            lower_hp_basis : 100,
+            period_basis : 100
         });
         this.spirit_class_state = Object.fromEntries(
             this.SpiritClasses.map(name => [name, DefaultSpiritClassState()])
@@ -159,7 +161,7 @@ export class SpawnScheduler {
         this.mutation_period = 10.0;
 
         this.ecosystem_counter = 0;
-        this.ecosystem_period = 23.0;
+        this.ecosystem_period = 2.0;  // 23.0
 
         this.initialize_class_state();
     }
@@ -179,7 +181,7 @@ export class SpawnScheduler {
     }
 
     initial_placement(){    
-        for(let i=0; i<10; i++){
+        for(let i=0; i<18; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
@@ -188,12 +190,12 @@ export class SpawnScheduler {
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
         }
- */
+
         for(let i=0; i<1; i++){
             const pos = this.random_surface_position(5.0);
             GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
         }
-/*
+
         for(let i=0; i<5; i++){
             const pos = this.random_surface_position(3.0);
             GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
@@ -206,7 +208,7 @@ export class SpawnScheduler {
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
         }
- */
+*/ 
     }
 
     initialize_class_state(){
@@ -219,67 +221,62 @@ export class SpawnScheduler {
         st.max_num = 80;
         st.period = 1.0;
         st.count = 0;
-        st.lower_hp_min = 0.0;
-        st.period_min = 1.0;
+        st.lower_hp_basis = 0.0;
+        st.period_basis = 1.0;
 
         st = this.spawn.spirit_class_state["Spirit_Virus"];
         st.lower_chain = ["Spirit_Fish", "Spirit_Jelly", "Spirit_Shark", "Spirit_Squid", "Spirit_Whale"];
         st.upper_chain = [];
         st.max_num = 30;
-        st.period = 0.0;
+        st.period = 0;
         st.count = 0;
-        st.lower_hp_min = 3000;
-        st.period_min = 1.13;
+        st.lower_hp_basis = 2540;
+        st.period_basis = 1.27;
 
         st = this.spawn.spirit_class_state["Spirit_Fish"];
         st.lower_chain = ["Spirit_Plankton"];
         st.upper_chain = ["Spirit_Squid", "Spirit_Shark"];
         st.max_num = 50;
-        st.period = 3.0;
+        st.period = 0;
         st.count = 0;
-        st.lower_hp_min = 250;
-        st.period_min = 3.0;
-//        st.generation = 1;
-//        st.genome_modifier = { speed : 2.0};
+        st.lower_hp_basis = 180;
+        st.period_basis = 3.5;
 
         st = this.spawn.spirit_class_state["Spirit_Jelly"];
         st.lower_chain = ["Spirit_Plankton"];
         st.upper_chain = ["Spirit_Squid", "Spirit_Shark"];
         st.max_num = 20;
-        st.period = 0.0;
+        st.period = 0;
         st.count = 0;
-        st.lower_hp_min = 250;
-        st.period_min = 10.5;
+        st.lower_hp_basis = 280;
+        st.period_basis = 10.5;
 
         st = this.spawn.spirit_class_state["Spirit_Squid"];
         st.lower_chain = ["Spirit_Plankton", "Spirit_Fish", "Spirit_Jelly"];
         st.upper_chain = ["Spirit_Shark"];
-        st.max_num = 10;
-        st.period = 0.0;
+        st.max_num = 12;
+        st.period = 0;
         st.count = 0;
-        st.lower_hp_min = 1500;
-        st.period_min = 31.0;
+        st.lower_hp_basis = 1000;
+        st.period_basis = 17.0;
         
         st = this.spawn.spirit_class_state["Spirit_Shark"];
         st.lower_chain = ["Spirit_Fish", "Spirit_Squid"];
         st.upper_chain = [];
         st.max_num = 3;
-        st.period = 0.0;
+        st.period = 0;
         st.count = 0;
-        st.lower_hp_min = 1200;
-        st.period_min = 81.9;
-//        st.generation = 1;
-//        st.genome_modifier = {speed : 2.0, accel : 2.0, predation_radius : 2.0};
- 
+        st.lower_hp_basis = 1000;
+        st.period_basis = 31.9;
 
         st = this.spawn.spirit_class_state["Spirit_Whale"];
         st.lower_chain = ["Spirit_Plankton"];
         st.upper_chain = [];
         st.max_num = 2;
-        st.period = 0.0;
+        st.period = 0;
         st.count = 0;
-        st.lower_hp_min = 350;
-        st.period_min = 198.0;
+        st.lower_hp_basis = 500;
+        st.period_basis = 89.0;
     }
 
     count_class(class_name) {
@@ -324,12 +321,47 @@ export class SpawnScheduler {
     }
 
     cause_mutation(cls){
-        // ウィルスによる感染が一定数を超えた時に
-        // 脅威（淘汰圧）に応じて
+        // 感染数、餓死数、被食数、個体数からなる
+        // 脅威（淘汰圧）に応じて（判定時の個体数が少ないほど淘汰圧は大きい）
         // genome_modifier を一部乱数的に変更し
         // ウィルス感染数をリセットし
         // 世代番号を一つ増やす
+        let isMutating = false;
+
         const st = this.state[cls];
+        const num = this.count_class(cls);
+
+        // console.log("[MUTATION]:",cls,"(",st.generation,") num:",num," infected:", st.num_infected, " starved:", st.num_starved, " preyed:", st.num_preyed);
+
+        // 突然変異の判定・処理 [TEST]
+        if ((st.num_starved > 7 && num < 3) ||    // 餓死パターン
+            (st.num_preyed > 150 && num < 3) ||    // 捕食されるパターン A
+            (st.num_infecter > 100 && num < 2)){  // ウィルス感染パターン
+            st.genome_modifier = {speed : 2.0, accel : 2.0, predation_radius : 2.0}; 
+            isMutating = true;
+        } else if (st.num_preyed > 915 ){       // 捕食されるパターン B
+            st.genome_modifier = {hp_max : 2.0};
+            isMutating = true;
+        }
+
+        if (isMutating){
+            st.generation += 1;
+
+            // 突然変異の予告メッセージ
+            const texts = [`${cls} (${st.generation}) mutation are in progress.`];
+            const color = "#ff8020";
+            GameState.ui_manager.add_scroll_messages(texts, color);
+
+            // [TEST] LOG
+            const time = Math.floor(GameState.elapsed_time / 1000);
+            const log = `[MUTAT] ${cls}(${st.generation}) num:${num} inf:${st.num_infected} stv:${st.num_starved} pry:${st.num_preyed}`;
+            console.log(time,":", log);
+
+            // 突然変異判定変数のリセット
+            st.num_infected= 0;
+            st.num_starved=0;
+            st.num_preyed=0;
+        }
     }
 
     regulate_ecosystem(cls){
@@ -337,17 +369,33 @@ export class SpawnScheduler {
         // 潤沢なら定期生成間隔を短くし
         // 貧弱なら定期生成間隔を長くする
         const st = this.state[cls];
+        if (st.lower_hp_basis === 0) return;  // 下位がいない
+
         const sum_hp_lower = GameState.spirits.reduce(
             (sum, s) => st.lower_chain.includes(s.class_name) ? sum + s.genome.hp_max : sum,
             0
         );
+        const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+        const ratio = clamp((sum_hp_lower / st.lower_hp_basis), 0.5, 2.0);
+        // console.log("[ECO]:", cls, sum_hp_lower, st.lower_hp_basis, ratio);
 
-        // console.log("[regulate_ecosystem]:", cls, sum_hp_lower, st.lower_hp_min);
+        if (st.period === 0){
+            if (ratio > 1.0){
+                // 初めて、捕食対象のHP合計が、基準値を突破
+                st.period = st.period_basis / ratio;
+                // 新しい種族の登場予告メッセージ
+                const texts = [`${cls} will appear in ${Math.floor(st.period)} seconds`];
+                const color = "#09e0ff";
+                GameState.ui_manager.add_scroll_messages(texts, color);
 
-        if (sum_hp_lower > st.lower_hp_min){
-            const period = Math.max(st.period_min / 2.0, st.period_min / (sum_hp_lower / st.lower_hp_min))
-            st.period = period;
-            console.log("[regulate_ecosystem] update period:", cls, sum_hp_lower, period);
+                // [TEST] LOG
+                const time = Math.floor(GameState.elapsed_time / 1000);
+                const log = `[ECOSYS] ${cls} - ${sum_hp_lower} / ${st.lower_hp_basis}`;
+                console.log(time,":", log);
+            }
+        } else {
+            // console.log("[ECO] ", cls, " sufficiency:", Math.floor(ratio * 100));
+            st.period = st.period_basis / ratio;
         }
     }
 

@@ -45,7 +45,8 @@ export class Drawable {
             this.mesh = null;
         }
         if (this.root){
-            this.root.dispose();
+            // 第一引数 doNotRecurse 第二引数 disposeMaterialAndTextures
+            this.root.dispose(false, true); //再帰的に material /texture も dispose
             this.root
         }
     }

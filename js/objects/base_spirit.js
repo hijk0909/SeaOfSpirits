@@ -54,6 +54,8 @@ export class Spirit extends Collidable {
 
         this.prev_LOD = false; //1フレーム前のLOD
 
+        this.clone_observers = [];
+
         // [DEBUG] 当たり判定の可視化
         this.debugEllipsoid = null;
     }
@@ -188,7 +190,7 @@ export class Spirit extends Collidable {
             // 親が TransformNode でない場合、rotationQuaternion のアニメーションを同期
             if (!(mesh.parent instanceof BABYLON.TransformNode) || 
                 mesh.parent instanceof BABYLON.AbstractMesh) {
-                this.scene.onBeforeRenderObservable.add(() => {
+                const observer = this.scene.onBeforeRenderObservable.add(() => {
                     if (mesh.rotationQuaternion) {
                         if (!depthClone.rotationQuaternion) {
                             depthClone.rotationQuaternion = mesh.rotationQuaternion.clone();
@@ -197,6 +199,7 @@ export class Spirit extends Collidable {
                         }
                     }
                 });
+                this.clone_observers.push(observer);
             }
         });
     }
@@ -258,196 +261,82 @@ export class Spirit extends Collidable {
 
         // 継ぎ目を綺麗にするリピート設定
         texture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
-        
+
+        // dispose() 用に保存
+        this.texture = texture;
+
         return texture;
     }
 
-get_perlin_texture(c1, c2, frequency = 16) {
-    const size = 128;
-    const data = new Uint8Array(size * size * 4);
+    get_perlin_texture(c1, c2, frequency = 4) {
+        const size = 32;
+        const data = new Uint8Array(size * size * 4);
 
-    const hash = (x, y) => {
-        let h = (x | 0) * 1597334677 ^ (y | 0) * 3812015801;
-        h = Math.imul(h ^ (h >>> 15), h | 1);
-        h ^= h + Math.imul(h ^ (h >>> 7), h | 61);
-        return ((h ^ (h >>> 14)) >>> 0) / 4294967296;
-    };
+        // 格子点ごとに「勾配ベクトル」を決定論的に生成
+        const gradAngle = (ix, iy) => {
+            // 周期境界を保証するため % frequency してからハッシュ
+            const px = ((ix % frequency) + frequency) % frequency;
+            const py = ((iy % frequency) + frequency) % frequency;
+            let h = px * 1597334677 ^ py * 3812015801;
+            h = Math.imul(h ^ (h >>> 15), h | 1);
+            h ^= h + Math.imul(h ^ (h >>> 7), h | 61);
+            return ((h ^ (h >>> 14)) >>> 0) / 4294967296 * Math.PI * 2;
+        };
 
-    const lerp = (a, b, t) => a + t * (b - a);
-    const fade = (t) => t * t * (3 - 2 * t);
+        const dot_grad = (ix, iy, fx, fy) => {
+            const angle = gradAngle(ix, iy);
+            return Math.cos(angle) * fx + Math.sin(angle) * fy;
+        };
 
-    /*
-    const c1 = parseInt(color1.slice(1), 16);
-    const c2 = parseInt(color2.slice(1), 16);
-    const c1r = (c1 >> 16) & 0xFF, c1g = (c1 >> 8) & 0xFF, c1b = c1 & 0xFF;
-    const c2r = (c2 >> 16) & 0xFF, c2g = (c2 >> 8) & 0xFF, c2b = c2 & 0xFF;
-    */
+        const fade  = (t) => t * t * t * (t * (t * 6 - 15) + 10); // 五次（Ken Perlins改良版）
+        const lerp  = (a, b, t) => a + t * (b - a);
 
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            const u = (x / size) * frequency;
-            const v = (y / size) * frequency;
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const u  = (x / size) * frequency;
+                const v  = (y / size) * frequency;
+                const x0 = Math.floor(u);
+                const y0 = Math.floor(v);
+                const x1 = x0 + 1;
+                const y1 = y0 + 1;
+                // 格子点からの相対距離
+                const dx0 = u - x0,  dy0 = v - y0;
+                const dx1 = u - x1,  dy1 = v - y1;
 
-            const x0 = Math.floor(u);
-            const y0 = Math.floor(v);
+                const fu = fade(dx0);
+                const fv = fade(dy0);
 
-            const x1 = (x0 + 1) % frequency; 
-            const y1 = (y0 + 1) % frequency;
+                // 各格子点の勾配との内積（% frequency はgradAngle内部で処理）
+                const n00 = dot_grad(x0, y0,  dx0,  dy0);
+                const n10 = dot_grad(x1, y0,  dx1,  dy0);
+                const n01 = dot_grad(x0, y1,  dx0,  dy1);
+                const n11 = dot_grad(x1, y1,  dx1,  dy1);
 
-            const fu = fade(u - x0);
-            const fv = fade(v - y0);
+                const nx0 = lerp(n00, n10, fu);
+                const nx1 = lerp(n01, n11, fu);
 
-            const n00 = hash(x0 % frequency, y0 % frequency);
-            const n10 = hash(x1, y0 % frequency);
-            const n01 = hash(x0 % frequency, y1);
-            const n11 = hash(x1, y1);
+                // Gradient Noiseの出力範囲は約[-0.7, 0.7]なので0〜1に正規化
+                const t = lerp(nx0, nx1, fv) * 0.7071 * 0.5 + 0.5;
+                const tc = Math.max(0, Math.min(1, t));
 
-            const nx0 = lerp(n00, n10, fu);
-            const nx1 = lerp(n01, n11, fu);
-            const t = lerp(nx0, nx1, fv);
-
-            const i = (y * size + x) * 4;
-            data[i]     =  (lerp(c1.r, c2.r, t) * 255) | 0;
-            data[i + 1] =  (lerp(c1.g, c2.g, t) * 255) | 0;
-            data[i + 2] =  (lerp(c1.b, c2.b, t) * 255) | 0;
-            data[i + 3] = 255;
+                const i = (y * size + x) * 4;
+                data[i]     = (lerp(c1.r, c2.r, tc) * 255) | 0;
+                data[i + 1] = (lerp(c1.g, c2.g, tc) * 255) | 0;
+                data[i + 2] = (lerp(c1.b, c2.b, tc) * 255) | 0;
+                data[i + 3] = 255;
+            }
         }
+
+        const texture = BABYLON.RawTexture.CreateRGBATexture(
+            data, size, size, this.scene,
+            false, false,
+            BABYLON.Texture.TRILINEAR_SAMPLINGMODE,
+            BABYLON.Constants.TEXTURETYPE_UNSIGNED_BYTE
+        );
+
+        this.texture = texture;
+        return texture;
     }
-
-    // CreateRGBATexture の引数
-    // 第5引数: generateMipMaps (boolean)
-    // 第6引数: invertY (boolean)
-    // 第7引数: samplingMode (number)
-    // 第8引数: type (number)
-    const texture = BABYLON.RawTexture.CreateRGBATexture(
-        data, size, size,  this.scene, 
-        false,  false,
-        BABYLON.Texture.TRILINEAR_SAMPLINGMODE,
-        BABYLON.Constants.TEXTURETYPE_UNSIGNED_BYTE
-    );
-
-    return texture;
-}
-
-
-/*
-get_perlin_texture(color1, color2, repeat = false) {
-    const size = 64;
-    const frequency = 32; // タイル周期（整数にすること）
-
-    // --- パーリンノイズのセットアップ ---
-    // permテーブルを使うことで hash(x % freq) == hash(x) が保証される
-    const PERM_SIZE = 256;
-    const perm = new Uint8Array(PERM_SIZE);
-    for (let i = 0; i < PERM_SIZE; i++) perm[i] = i;
-    // シャッフル（固定シード）
-    let seed = 12345;
-    const rand = () => {
-        seed = Math.imul(seed, 1664525) + 1013904223 | 0;
-        return (seed >>> 0) / 4294967296;
-    };
-    for (let i = PERM_SIZE - 1; i > 0; i--) {
-        const j = Math.floor(rand() * (i + 1));
-        [perm[i], perm[j]] = [perm[j], perm[i]];
-    }
-
-    // 周期 `freq` で折り返すハッシュ
-    // xi, yi は必ず 0..freq-1 の範囲で渡す → タイル境界で連続
-    const grad2 = [
-        [1,1],[-1,1],[1,-1],[-1,-1],
-        [1,0],[-1,0],[0,1],[0,-1]
-    ];
-    const gradHash = (xi, yi) => {
-        // 周期テーブルを freq で折り返してインデックスを作る
-        const idx = perm[(perm[xi % PERM_SIZE] + yi) % PERM_SIZE] % grad2.length;
-        return grad2[idx];
-    };
-
-    const dot2 = (g, dx, dy) => g[0] * dx + g[1] * dy;
-    const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10); // 5次補間（推奨）
-    const lerp = (a, b, t) => a + t * (b - a);
-
-    // グラジェントノイズ（シームレス版）
-    // tx, ty: 0.0〜1.0 の UV座標
-    const perlinTileable = (tx, ty) => {
-        const u = tx * frequency;
-        const v = ty * frequency;
-
-        const x0 = Math.floor(u);
-        const y0 = Math.floor(v);
-        const x1 = x0 + 1;
-        const y1 = y0 + 1;
-
-        const fu = fade(u - x0);
-        const fv = fade(v - y0);
-
-        // ★ ここで % frequency することで周期性を保証
-        const g00 = gradHash(x0 % frequency, y0 % frequency);
-        const g10 = gradHash(x1 % frequency, y0 % frequency);
-        const g01 = gradHash(x0 % frequency, y1 % frequency);
-        const g11 = gradHash(x1 % frequency, y1 % frequency);
-
-        const n00 = dot2(g00, u - x0, v - y0);
-        const n10 = dot2(g10, u - x1, v - y0);
-        const n01 = dot2(g01, u - x0, v - y1);
-        const n11 = dot2(g11, u - x1, v - y1);
-
-        const nx0 = lerp(n00, n10, fu);
-        const nx1 = lerp(n01, n11, fv);
-        return lerp(nx0, nx1, fv) * 0.5 + 0.5; // 0〜1 に正規化
-    };
-
-    // --- テクスチャデータ生成 ---
-    const c1 = parseInt(color1.slice(1), 16);
-    const c2 = parseInt(color2.slice(1), 16);
-    const c1r = (c1 >> 16) & 0xFF, c1g = (c1 >> 8) & 0xFF, c1b = c1 & 0xFF;
-    const c2r = (c2 >> 16) & 0xFF, c2g = (c2 >> 8) & 0xFF, c2b = c2 & 0xFF;
-
-    const data = new Uint8Array(size * size * 4);
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            // UV は 0〜1（境界を含めない）
-            const tx = x / size;
-            const ty = y / size;
-            const n = perlinTileable(tx, ty);
-
-            const i = (y * size + x) * 4;
-            data[i]     = lerp(c1r, c2r, n);
-            data[i + 1] = lerp(c1g, c2g, n);
-            data[i + 2] = lerp(c1b, c2b, n);
-            data[i + 3] = 255;
-        }
-    }
-    // CreateRGBATexture の引数
-    // 第5引数: generateMipMaps (boolean)
-    // 第6引数: invertY (boolean)
-    // 第7引数: samplingMode (number)
-    // 第8引数: type (number)
-    const texture = BABYLON.RawTexture.CreateRGBATexture(
-        data, 
-        size, 
-        size, 
-        this.scene, 
-        false, // generateMipMaps
-        false, // invertY
-        BABYLON.Texture.TRILINEAR_SAMPLINGMODE,
-        BABYLON.Constants.TEXTURETYPE_UNSIGNED_BYTE
-    );
-
-    if (repeat) {
-        texture.uScale = 4.0;
-        texture.vScale = 4.0;
-        texture.wrapU = BABYLON.Texture.MIRROR_ADDRESSMODE;
-        texture.wrapV = BABYLON.Texture.MIRROR_ADDRESSMODE;
-    } else {
-        texture.uScale = 1.0;
-        texture.vScale = 1.0;
-        texture.uOffset = 0.5;
-    }
-
-    return texture;
-}
-*/
 
     flash(){
         this.flash_time = FLASH_TIME;
@@ -512,6 +401,7 @@ get_perlin_texture(color1, color2, repeat = false) {
             this.hp -= this.hp_decrease;
             if (this.hp < 0){
                 this.set_dying();
+                GameState.spawn.spirit_class_state[this.class_name].num_starved += 1;
                 // console.log("starvation:", this.class_name);
                 GameState.spawn.activate_effect("Effect_Extinction", this.root.position, { size : this.collisionRadius});
                 GameState.asset.se.extinction.play_3D(this.root.position);
@@ -568,6 +458,16 @@ get_perlin_texture(color1, color2, repeat = false) {
         for (const attachment of this.attachments){
             attachment.dispose();
         }
+
+        if (this.texture){
+            this.texture.dispose();
+            this.texture = null;
+        }
+
+        this.clone_observers.forEach(obs => {
+            this.scene.onBeforeRenderObservable.remove(obs);
+        });
+        this.clone_observers.length = 0;
 
         super.dispose();
     }

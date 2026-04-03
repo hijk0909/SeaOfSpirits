@@ -142,6 +142,8 @@ export class Spirit_Virus extends Spirit {
 
                         // [TEST]
                         GameState.bubbles.add_bubble(this.root.position);
+                        // 被感染数の記録
+                        GameState.spawn.spirit_class_state[spirit.class_name].num_infected += 1;
                         break;
                     }
                 }
