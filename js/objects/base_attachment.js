@@ -40,11 +40,15 @@ export class Attachment {
     }
 
     dispose(){
+        // root.dispose(false, true) で全部消えるはず
+        /*
         for (const attachment of this.nodes){
             if (!attachment.isDisposed()){
-                attachment.dispose();
+                // 第一引数 doNotRecurse 第二引数 disposeMaterialAndTextures
+                attachment.dispose(true, true);
             }
         }
-        this.attachments = null;
+        */
+        this.nodes = null;
     }
 }

@@ -109,6 +109,20 @@ export class Spawn {
         }
     }
 
+    clean_pool(class_name, generation){
+        let removed = 0;
+        const {pool : pool} = this.SpiritClassList[class_name];
+        for (let i = pool.length - 1; i>= 0; i--) {
+            const object = pool[i];
+            if (object.generation < generation){
+                pool.splice(i, 1);
+                object.dispose();
+                removed++;
+            }
+        }
+        return removed;
+    }
+
     activate_effect(class_name, pos, params = null){
         const Class = this.EffectClassList[class_name];
 
@@ -163,6 +177,9 @@ export class SpawnScheduler {
         this.ecosystem_counter = 0;
         this.ecosystem_period = 2.0;  // 23.0
 
+        this.performance_counter = 0;
+        this.performance_period = 60.0;
+
         this.initialize_class_state();
     }
 
@@ -186,14 +203,20 @@ export class SpawnScheduler {
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
 /*
+        for(let i=0; i<3; i++){
+            const pos = this.random_surface_position(4.0);
+            GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
+        }
+
+
+        for(let i=0; i<1; i++){
+            const pos = this.random_surface_position(4.0);
+            GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
+        }
+
         for(let i=0; i<1; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
-        }
-
-        for(let i=0; i<2; i++){
-            const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
         }
 
         for(let i=0; i<1; i++){
@@ -204,10 +227,6 @@ export class SpawnScheduler {
         for(let i=0; i<5; i++){
             const pos = this.random_surface_position(3.0);
             GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
-        }
-        for(let i=0; i<1; i++){
-            const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
         }
 */ 
     }
@@ -319,6 +338,79 @@ export class SpawnScheduler {
                 }
             }
         }
+
+        // ◆ パフォーマンスログ
+        this.performance_counter += delta / 1000;
+        if (this.performance_counter > this.performance_period){
+            this.performance_counter = 0;
+                console.log(
+                    "meshes:", this.scene.meshes.length,
+                    "materials:", this.scene.materials.length,
+                    "textures:", this.scene.textures.length,
+                    "geometries:", this.scene.geometries.length,
+                    "transformNodes:", this.scene.transformNodes.length
+                );
+/*
+                console.log(
+                    "active spirits:", GameState.spirits.length,
+                    "active effects:", GameState.effects.length
+                );
+                console.log("POOL:");
+                for (const cls of this.spawn.SpiritClasses){
+                    const {pool : pool} = this.spawn.SpiritClassList[cls];
+                    console.log(`${cls}:${pool.length}`);
+                }
+                console.log(`effect:${this.spawn.effect_pool.length}`);
+*/
+                // this.dumpMaterials(this.scene);
+                // this.dumpTextures(this.scene);
+        }
+    }
+
+    dumpTextures(scene) {
+        const summary = { rawTexture: [], canvasDataURL: [], fileTexture: [], unknown: [] };
+
+        scene.textures.forEach((tex, i) => {
+            const url = tex.url || tex.name || "";
+            if (tex instanceof BABYLON.RawTexture) {
+                summary.rawTexture.push(tex.name);
+            } else if (url.startsWith("data:")) {
+                summary.canvasDataURL.push(tex.name);
+            } else if (url.includes("particle.png")) {
+                summary.fileTexture.push(tex.name);
+            } else {
+                summary.unknown.push({ name: tex.name, url });
+            }
+        });
+
+        console.log("=== Texture Dump ===");
+        console.log(`RawTexture(CreateRGBATexture): ${summary.rawTexture.length}`, summary.rawTexture);
+        console.log(`Canvas(toDataURL):             ${summary.canvasDataURL.length}`, summary.canvasDataURL);
+        console.log(`File(particle.png):            ${summary.fileTexture.length}`, summary.fileTexture);
+        console.log(`Unknown:                       ${summary.unknown.length}`, summary.unknown);
+    }
+
+    dumpMaterials(scene) {
+        const byType = {};
+        scene.materials.forEach(mat => {
+            const type = mat.getClassName(); // "PBRMaterial", "StandardMaterial" etc.
+            byType[type] = (byType[type] || 0) + 1;
+        });
+        console.log("=== Material Dump ===", byType);
+
+        // albedoTexture を持つものだけ抽出
+        const withTex = scene.materials.filter(m =>
+            m.albedoTexture || m.diffuseTexture
+        );
+        console.log(`texture付きmaterial: ${withTex.length}`);
+
+        scene.materials
+            .filter(m => m.albedoTexture || m.diffuseTexture)
+            .forEach(m => {
+                console.log("material:", m.name, 
+                            "mesh:", m.getBindedMeshes().map(x => x.name),
+                            "texture.url:", m.albedoTexture?.url || m.albedoTexture?.name);
+            });
     }
 
     cause_mutation(cls){
@@ -357,6 +449,10 @@ export class SpawnScheduler {
             const time = Math.floor(GameState.elapsed_time / 1000);
             const log = `[MUTAT] ${cls}(${st.generation}) num:${num} inf:${st.num_infected} stv:${st.num_starved} pry:${st.num_preyed}`;
             console.log(time,":", log);
+
+            // プールから古い世代のキャラクターを削除する
+            const num_removed = this.spawn.clean_pool(cls, st.generation);
+            console.log("pool removed:", num_removed);
 
             // 突然変異判定変数のリセット
             st.num_infected= 0;

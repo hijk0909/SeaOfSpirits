@@ -46,7 +46,7 @@ export class Spirit_Fish extends Spirit {
         if (speed_ratio > 1.0){
             this.base_color.copyFromFloats(1.0, 0.6, 0.2);
         } else {
-            this.base_color.copyFromFloats(0.3, 0.5, 1.0);
+            this.base_color.copyFromFloats(0.3, 1.0, 1.0);
         }
 
         this.eye_emissive.copyFromFloats(3.0, 5.0, 1.0);
@@ -70,7 +70,7 @@ export class Spirit_Fish extends Spirit {
         } else {
             mat.albedoTexture = this.get_stripe_texture("#ffff00","#ff8000",10,1);
         }
-        mat.metallic = 0.2;
+        mat.metallic = 0.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
         // mat.fillMode = BABYLON.Material.WireFrameFillMode;

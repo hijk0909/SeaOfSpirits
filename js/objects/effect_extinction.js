@@ -19,8 +19,8 @@ export class Effect_Extinction extends Effect {
 
         // パーティクルシステムの生成
         const ps = new BABYLON.ParticleSystem("extinction", 2000, this.scene);
-        // disposeする場合はclone()しないと全パーティクルが消えるので注意
-        ps.particleTexture = this.particleTexture.clone();
+        // disposeする場合はthis.particleTexture.clone()しないと全パーティクルが消えるので注意
+        ps.particleTexture = this.particleTexture;
         ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
         /*
         ps.minSize = 0.2;

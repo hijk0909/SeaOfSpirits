@@ -62,6 +62,7 @@ export class Spirit_Shark extends Spirit {
     }
 
     _create_body(){
+        // console.trace("_create_body called");
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameterZ: 3.5, diameterX: 1.5, diameterY: 2.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
@@ -69,7 +70,7 @@ export class Spirit_Shark extends Spirit {
         this.mesh.isPickable = false;
         this.mesh.parent = this.root;
 
-        const mat = new BABYLON.PBRMaterial("material", this.scene); 
+        const mat = new BABYLON.PBRMaterial("shark-body-material", this.scene); 
         mat.albedoTexture = this.get_perlin_texture(this.texture_color_1, this.texture_color_2);
 
         mat.metallic = 0.0;
@@ -151,7 +152,7 @@ export class Spirit_Shark extends Spirit {
             }
             this.chaseTimer = this.chasePeriod;
         }
-        if ( this.target ){
+        if ( this.target && this.target.alive){
             this.tmp_target.copyFrom(this.target.root.position);
 
             // ターゲットに向かう速度計算

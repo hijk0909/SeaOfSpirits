@@ -52,19 +52,26 @@ export class Attachment_Tail extends Attachment{
         tail.scaling = new BABYLON.Vector3(scale, scale, scale);
         this.mesh = tail;
         this.nodes.push(tail);
+
+        // テンポラリ変数
+        this.tmp_qSwing      = new BABYLON.Quaternion();
+        this.tmp_qBase       = new BABYLON.Quaternion();
+        this.tmp_qRolled     = new BABYLON.Quaternion();
+        this.tmp_qFinal      = new BABYLON.Quaternion();
     }
 
     update(time, delta){
         const t = time * 0.001; // 秒
         const angle = this.mesh._wagAmp * Math.sin(t * this.mesh._wagSpeed + this.mesh._wagPhase);
+
         // 尻尾のローカル回転
-        const qSwing = BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Y, angle)
+        BABYLON.Quaternion.RotationAxisToRef(BABYLON.Axis.Y, angle, this.tmp_qSwing);
         // ソケットの向き（localNormal）を向く回転
-        const qBase = BABYLON.Quaternion.FromLookDirectionLH(
-            this.normal, BABYLON.Axis.Y
-        ).multiply(this.qRoll);
+        BABYLON.Quaternion.FromLookDirectionLHToRef(this.normal, BABYLON.Axis.Y, this.tmp_qBase);
         // 合成：まずソケット方向へ向け、そこから左右に振る
-        this.mesh.rotationQuaternion = qBase.multiply(qSwing);
+        this.tmp_qBase.multiplyToRef(this.qRoll, this.tmp_qRolled);
+        this.tmp_qRolled.multiplyToRef(this.tmp_qSwing, this.tmp_qFinal);
+        this.mesh.rotationQuaternion.copyFrom(this.tmp_qFinal);
 
         super.update(time, delta);
     }

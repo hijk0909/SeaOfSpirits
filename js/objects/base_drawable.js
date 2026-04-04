@@ -40,14 +40,17 @@ export class Drawable {
     }
 
     dispose(){
+        /*
+        // this.root.dispose(false, true) に任せれば消えるはず
         if (this.mesh){
             this.mesh.dispose();
             this.mesh = null;
         }
+        */
         if (this.root){
             // 第一引数 doNotRecurse 第二引数 disposeMaterialAndTextures
             this.root.dispose(false, true); //再帰的に material /texture も dispose
-            this.root
+            this.root = null;
         }
     }
 }

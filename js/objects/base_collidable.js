@@ -205,10 +205,6 @@ export class Collidable extends Drawable {
     }
 
     dispose(){
-        if (this.collider){
-            this.collider.dispose();
-            this.collider = null;
-        }
         super.dispose();
     }
 }

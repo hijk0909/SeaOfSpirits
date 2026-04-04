@@ -17,21 +17,33 @@ export class Attachment_Mouth extends Attachment{
 
         const r = 0.5; //スケール倍率
 
+        // テンポラリ変数
+        this.tmp_rotQuat      = new BABYLON.Quaternion();
+        this.tmp_finalQuat    = new BABYLON.Quaternion();
+        this.tmp_offsetLocal  = new BABYLON.Vector3(0, 0, 0);
+        this.tmp_fulcrumLocal = new BABYLON.Vector3(0, 0, 0);
+        this.tmp_offsetRotated = new BABYLON.Vector3(0, 0, 0);
+        this.tmp_fulcrumWorld  = new BABYLON.Vector3(0, 0, 0);
+        this.tmp_offsetWorld   = new BABYLON.Vector3(0, 0, 0);
+
+        // 上側・下側のrootの設定
         this.root_upper = this.create_root(socket);
-        this.root_upper_rotationQuaternion_base = this.root_upper.rotationQuaternion;
-        this.root_upper_position_base = this.root_upper.position;
-        this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, -45);
+        this.root_upper_rotationQuaternion_base = this.root_upper.rotationQuaternion.clone();
+        this.root_upper_position_base = this.root_upper.position.clone();
         this.root_upper.scaling.set(scale * r, scale * r, scale * r);
+        this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, -45);
 
         this.root_lower = this.create_root(socket);
-        this.root_lower_rotationQuaternion_base = this.root_lower.rotationQuaternion;
-        this.root_lower_position_base = this.root_lower.position;
-        this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, +45);
+        this.root_lower_rotationQuaternion_base = this.root_lower.rotationQuaternion.clone();
+        this.root_lower_position_base = this.root_lower.position.clone();
         this.root_lower.scaling.set(scale * r, scale * r, scale * r);
+        this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, +45);
 
+        // 唇の生成
         this.create_lip(this.root_upper, parameters);
         this.create_lip(this.root_lower, parameters);
 
+        // 歯の生成
         if (this.hasTeeth){
             this.create_teeth(this.root_upper, true, 8, parameters);
             this.create_teeth(this.root_lower, false, 8, parameters);
@@ -39,25 +51,29 @@ export class Attachment_Mouth extends Attachment{
     }
 
     rotate_root(root, baseQuat, basePosition, angleDeg, fulcrum=-1.0){
+
         const angleRad = BABYLON.Tools.ToRadians(angleDeg);
-    
+  
         //（１） 回転クォータニオン
-        const rotQuat = BABYLON.Quaternion.RotationAxis(BABYLON.Axis.X, angleRad);
-        root.rotationQuaternion = rotQuat.multiply(baseQuat);
+        BABYLON.Quaternion.RotationAxisToRef(BABYLON.Axis.X, angleRad, this.tmp_rotQuat);
+        this.tmp_rotQuat.multiplyToRef(baseQuat, this.tmp_finalQuat);
+        root.rotationQuaternion.copyFrom(this.tmp_finalQuat);
 
         //（２）支点オフセット：ローカルZ軸上の fulcrum 点を回転で動かす
         //    fulcrum点からrootへのベクトル (0, 0, -fulcrum) を rotQuat で回転
-        const offsetLocal = new BABYLON.Vector3(0, 0, -fulcrum);
-        const offsetRotated = offsetLocal.applyRotationQuaternion(rotQuat);
+        this.tmp_offsetLocal.set(0, 0, -fulcrum);
+        this.tmp_offsetLocal.applyRotationQuaternionToRef(this.tmp_rotQuat, this.tmp_offsetRotated);
 
         //（３）ワールド座標での支点位置 = basePosition + baseQuat で回転したfulcrum方向
         //    支点はbasePositionからローカルZ方向にfulcrumずれた位置
-        const fulcrumLocal = new BABYLON.Vector3(0, 0, fulcrum);
-        const fulcrumWorld = fulcrumLocal.applyRotationQuaternion(baseQuat).add(basePosition);
+        this.tmp_fulcrumLocal.set(0, 0, fulcrum);
+        this.tmp_fulcrumLocal.applyRotationQuaternionToRef(baseQuat, this.tmp_fulcrumWorld);
+        this.tmp_fulcrumWorld.addInPlace(basePosition);
 
         //（４）root位置 = 支点ワールド位置 + 回転後オフセット（baseQuatも考慮）
-        const offsetWorld = offsetRotated.applyRotationQuaternion(baseQuat);
-        root.position = fulcrumWorld.add(offsetWorld);
+        this.tmp_offsetRotated.applyRotationQuaternionToRef(baseQuat, this.tmp_offsetWorld);
+        this.tmp_offsetWorld.addInPlace(this.tmp_fulcrumWorld);
+        root.position.copyFrom(this.tmp_offsetWorld);
     }
 
     /*
@@ -196,6 +212,7 @@ export class Attachment_Mouth extends Attachment{
     }
 
     dispose(){
+
         super.dispose();
     }
 }

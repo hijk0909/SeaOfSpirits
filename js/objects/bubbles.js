@@ -14,8 +14,10 @@ export class Bubbles extends Drawable {
         this.bubble = null;
         this.matrixBuffer = new Float32Array(MAX_BUBBLES * 16);
         this.flags = new Array(MAX_BUBBLES).fill(false);
-        this.tmp_position = new BABYLON.Vector3(0,0,0);
 
+        this.tmp_position = new BABYLON.Vector3(0,0,0);
+        this.QuatIdentity = BABYLON.Quaternion.Identity();
+        this.tmp_matrix = new BABYLON.Matrix();
         this.create();
     }
 
@@ -43,12 +45,13 @@ export class Bubbles extends Drawable {
     }
 
     _writeMatrix(index, scale, position) {
-        const mat = BABYLON.Matrix.Compose(
+        BABYLON.Matrix.ComposeToRef(
             scale,
-            BABYLON.Quaternion.Identity(),
-            position
+            this.QuatIdentity,
+            position,
+            this.tmp_matrix
         );
-        mat.copyToArray(this.matrixBuffer, index * 16);
+        this.tmp_matrix.copyToArray(this.matrixBuffer, index * 16);
     }
 
     add_bubble(pos) {

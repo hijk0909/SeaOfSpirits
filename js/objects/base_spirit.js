@@ -135,7 +135,7 @@ export class Spirit extends Collidable {
         // clone（個別化）のある マテリアルに限定する
         this.root.getChildMeshes().forEach(m => {
             if (m.material && typeof m.material.clone === "function"){ //cloneの無いmaterialを除外
-                m.material = m.material.clone(); //キャラクターごとに個別に点滅させるため
+                // m.material = m.material.clone(); //キャラクターごとに個別に点滅させるため
                 if (m.material.emissiveColor){
                     m.material._emissiveBase = m.material.emissiveColor.clone();
                     this.emissive_materials.push(m.material);
@@ -326,14 +326,12 @@ export class Spirit extends Collidable {
                 data[i + 3] = 255;
             }
         }
-
         const texture = BABYLON.RawTexture.CreateRGBATexture(
             data, size, size, this.scene,
             false, false,
             BABYLON.Texture.TRILINEAR_SAMPLINGMODE,
             BABYLON.Constants.TEXTURETYPE_UNSIGNED_BYTE
         );
-
         this.texture = texture;
         return texture;
     }
@@ -459,7 +457,12 @@ export class Spirit extends Collidable {
             attachment.dispose();
         }
 
-        if (this.texture){
+        if (this.texture) {
+            if (this.mesh?.material instanceof BABYLON.PBRMaterial) {
+                this.mesh.material.albedoTexture = null;
+            } else if (this.mesh?.material instanceof BABYLON.StandardMaterial) {
+                this.mesh.material.diffuseTexture = null;
+            }
             this.texture.dispose();
             this.texture = null;
         }

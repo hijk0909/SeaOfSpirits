@@ -19,8 +19,8 @@ export class Effect_Feeding extends Effect {
 
         // パーティクルシステムの生成
         const ps = new BABYLON.ParticleSystem("explosion", 200, this.scene);
-        // disposeする場合はclone()しないと全パーティクルが消えるので注意
-        ps.particleTexture = this.particleTexture.clone();
+        // disposeする場合はthis.particleTexture.clone()しないと全パーティクルが消えるので注意
+        ps.particleTexture = this.particleTexture;
         ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
 
         const size = 0.6;
