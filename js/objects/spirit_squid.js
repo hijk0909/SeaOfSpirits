@@ -4,6 +4,11 @@ import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
 import { MyMath } from "../utils/MathUtils.js";
 
+
+const STATE_ALIGNING = 0;
+const STATE_JETTING = 1;
+const STATE_COOLDOWN = 2;
+
 // クラゲ
 export class Spirit_Squid extends Spirit {
 
@@ -18,17 +23,23 @@ export class Spirit_Squid extends Spirit {
         this.genome_is_collidable = true;
         this.genome.mass = 1.8;
         this.genome.speed = 0.2;
-        this.genome.rotate_speed = 1.7;
+        this.genome.rotate_speed = 0.3;
         this.genome.predation_classes = ["Spirit_Plankton", "Spirit_Jelly", "Spirit_Fish"];
         this.genome.predation_socket = {front : 0.0, theta : 0.0 , phi : 0.0};
         this.genome.predation_radius = 1.0;
 
         // クラス固有のパラメータ
-        this.counter = 0;
-        this.target = new BABYLON.Vector3(0,0,0);
-        this.base_color = new BABYLON.Color3(0.1, 0.1, 1.0);
+        this.state = STATE_COOLDOWN;
+        this.state_counter = 0;
+        this.aligning_speed = 0.01;
+        this.base_color = new BABYLON.Color3(0.0, 0.5, 1.0);
         this.tentacle_color = new BABYLON.Color3(0.1, 1.0, 1.0);
         this.eye_emissive = new BABYLON.Color3();
+
+        // テンポラリ変数
+        this.tmp_target = new BABYLON.Vector3(0,0,0);
+        this.tmp_toTarget = new BABYLON.Vector3();
+        this.tmp_forward = new BABYLON.Vector3();
     }
 
     create(genome_modifier){
@@ -49,7 +60,7 @@ export class Spirit_Squid extends Spirit {
 
         const mat = new BABYLON.PBRMaterial("spirit_squid_material", this.scene); 
         mat.albedoColor = this.base_color;
-        mat.metallic = 0.2;
+        mat.metallic = 0.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
         this.mesh.material = mat;
@@ -142,18 +153,34 @@ export class Spirit_Squid extends Spirit {
 
     update(time, delta){
 
-        this.counter -= delta / 1000;
-        if (this.counter < 0){
-            this.target = new BABYLON.Vector3(Math.random()*2 -1, Math.random()*2 -1, Math.random()*2 -1);
-            this.control_velocity = this.target.subtract(this.root.position);
-            this.control_velocity.normalize();
-            this.control_velocity.scaleInPlace(this.genome.speed);
-            this.counter = 3 + 3 * Math.random();
+        if (this.state === STATE_COOLDOWN){
+            this.state_counter -= delta / 1000;
+            if (this.state_counter < 0){
+                this.tmp_target.copyFromFloats(Math.random()*2 -1, Math.random()*2 -1, Math.random()*2 -1);
+                this.state = STATE_ALIGNING;
+            }
+        } else if (this.state === STATE_ALIGNING){
+            this.tmp_target.subtractToRef(this.root.position, this.tmp_toTarget);
+            if (this.tmp_toTarget.lengthSquared() < 1e-8) {
+                // 既に目的地にいる（ゼロベクトル対策）
+                this.state = STATE_COOLDOWN;
+                this.state_counter = 1;
+            } else {
+                this.tmp_toTarget.normalize();
+                this.rotate_to(this.tmp_toTarget, delta);
+                BABYLON.Vector3.TransformNormalToRef( BABYLON.Axis.Z, this.root.getWorldMatrix(), this.tmp_forward );
+                this.tmp_forward.normalize();
+                const dot = BABYLON.Vector3.Dot(this.tmp_toTarget, this.tmp_forward);
+                if ( dot > 0.99){
+                    // 方向が合ったらジェット噴射して、あとは惰性
+                    this.control_velocity.copyFrom(this.tmp_toTarget);
+                    this.control_velocity.scaleInPlace(this.genome.speed);
+                    this.state = STATE_COOLDOWN;
+                    this.state_counter = 2 + Math.random() * 3;
+                }
+            }
         }
-        this.control_velocity.scaleInPlace(0.99);
-
-        this.rotate_to(this.control_velocity, delta);
-
+        this.control_velocity.scaleInPlace(0.98);
         super.update(time, delta);
     }
 

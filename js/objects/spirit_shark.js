@@ -72,7 +72,7 @@ export class Spirit_Shark extends Spirit {
         const mat = new BABYLON.PBRMaterial("material", this.scene); 
         mat.albedoTexture = this.get_perlin_texture(this.texture_color_1, this.texture_color_2);
 
-        mat.metallic = 0.8;
+        mat.metallic = 0.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
         this.mesh.material = mat;

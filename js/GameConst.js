@@ -2,8 +2,8 @@
 
 export const GLOBALS = {
 
-    VERSION : "0.4b",
-    DATE : "2026.4.3",
+    VERSION : "0.4c",
+    DATE : "2026.4.4",
 
     DELTA : 16.6667,
     DELTA_CLAMP : 20,

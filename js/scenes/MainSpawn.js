@@ -186,6 +186,11 @@ export class SpawnScheduler {
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
 /*
+        for(let i=0; i<1; i++){
+            const pos = this.random_surface_position(4.0);
+            GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
+        }
+
         for(let i=0; i<2; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
@@ -203,10 +208,6 @@ export class SpawnScheduler {
         for(let i=0; i<1; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
-        }
-        for(let i=0; i<1; i++){
-            const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
         }
 */ 
     }
