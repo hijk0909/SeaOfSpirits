@@ -11,7 +11,7 @@ export class Attachment_Mouth extends Attachment{
     constructor(spirit, socket, parameters){
         super(spirit, socket);
 
-        const { hasTeeth = true, biteSpeed = 1.0, scale = 1.0, alpha = 1.0} = parameters;
+        const { hasTeeth = true, biteSpeed = 1.0, scale = 1.0, alpha = 1.0, offset = 0.0} = parameters;
         this.hasTeeth = hasTeeth;
         this.biteSpeed = biteSpeed;
 
@@ -27,13 +27,13 @@ export class Attachment_Mouth extends Attachment{
         this.tmp_offsetWorld   = new BABYLON.Vector3(0, 0, 0);
 
         // 上側・下側のrootの設定
-        this.root_upper = this.create_root(socket);
+        this.root_upper = this.create_root(socket, offset);
         this.root_upper_rotationQuaternion_base = this.root_upper.rotationQuaternion.clone();
         this.root_upper_position_base = this.root_upper.position.clone();
         this.root_upper.scaling.set(scale * r, scale * r, scale * r);
         this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, -45);
 
-        this.root_lower = this.create_root(socket);
+        this.root_lower = this.create_root(socket, offset);
         this.root_lower_rotationQuaternion_base = this.root_lower.rotationQuaternion.clone();
         this.root_lower_position_base = this.root_lower.position.clone();
         this.root_lower.scaling.set(scale * r, scale * r, scale * r);

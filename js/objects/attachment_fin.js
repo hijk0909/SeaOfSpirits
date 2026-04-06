@@ -11,7 +11,7 @@ export class Attachment_Fin extends Attachment{
         super(spirit, socket);
 
         const { position: fp, normal: fn } = socket;
-        const { bottomScale=1.0, height=1.0, twist=0.0, alpha=1.0, color=DEFAULT_COLOR} = parameters;
+        const { bottomScale=1.0, height=1.0, twist=0.0, alpha=1.0, color=DEFAULT_COLOR, offset = 0.0} = parameters;
 
         // 頂点座標
         const positions = [
@@ -34,6 +34,7 @@ export class Attachment_Fin extends Attachment{
             }, this.scene);
 
         mesh.position.copyFrom(fp);
+        this.shift_position(mesh.position, fn, offset);
         mesh.scaling = new BABYLON.Vector3(bottomScale, bottomScale, height);
 
         // （１）Z軸周りに twist度回転させるクオータニオン

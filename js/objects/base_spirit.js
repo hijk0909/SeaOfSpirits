@@ -10,6 +10,7 @@ import { Attachment_Mouth} from "./attachment_mouth.js";
 import { Attachment_Fin} from "./attachment_fin.js";
 
 const FLASH_TIME = 0.15; //秒
+const FALSH_INTENSITY = 0.3;
 const LOD_THRESHOLD = 12.0;
 
 export class Spirit extends Collidable {
@@ -350,9 +351,9 @@ export class Spirit extends Collidable {
     set_emissive_flash(t=0){
         this.emissive_materials.forEach(mat => {
             mat.emissiveColor.set(
-                mat._emissiveBase.r + t,
-                mat._emissiveBase.g + t,
-                mat._emissiveBase.b + t
+                mat._emissiveBase.r + t * FALSH_INTENSITY,
+                mat._emissiveBase.g + t * FALSH_INTENSITY,
+                mat._emissiveBase.b + t * FALSH_INTENSITY
             )
         });
     }

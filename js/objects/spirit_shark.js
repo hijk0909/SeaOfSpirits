@@ -52,8 +52,8 @@ export class Spirit_Shark extends Spirit {
             this.texture_color_2.copyFromFloats(0.6, 1.0, 0.2);
         } else {
             this.base_color.copyFromFloats(0.0, 1.0, 1.0);
-            this.texture_color_1.copyFromFloats(0.3, 0.8, 1.0);
-            this.texture_color_2.copyFromFloats(0.2, 0.5, 0.4);
+            this.texture_color_1.copyFromFloats(0.30, 0.80, 1.00);
+            this.texture_color_2.copyFromFloats(0.01, 0.03, 0.01);
         }
 
         this.eye_emissive.copyFromFloats(6.0, 0.0, 0.0);
@@ -87,7 +87,7 @@ export class Spirit_Shark extends Spirit {
         def = {
             name: "Attachment_Mouth",
             socket: {front:0.0, thetaDeg:-5, phiDeg:0},
-            params: {hasTeeth : true, biteSpeed : 3.0, scale : mouth_scale}
+            params: {hasTeeth : true, biteSpeed : 3.0, scale : mouth_scale, offset : -0.1}
         };
         this.attachment_definitions.push(structuredClone(def));
 

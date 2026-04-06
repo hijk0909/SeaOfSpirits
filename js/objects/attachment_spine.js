@@ -11,7 +11,7 @@ export class Attachment_Spine extends Attachment{
         super(spirit, socket);
 
         const { position: sp1p, normal: sp1n } = socket;
-        const { diameterBottom=0.2, height=0.45, alpha=1.0, color=DEFAULT_COLOR} = parameters;
+        const { diameterBottom=0.2, height=0.45, alpha=1.0, color=DEFAULT_COLOR, offset = 0.0} = parameters;
 
         const mesh = BABYLON.MeshBuilder.CreateCylinder("spine", {
             diameterTop: 0.0, diameterBottom: diameterBottom, height: height, tessellation: 8
@@ -32,6 +32,7 @@ export class Attachment_Spine extends Attachment{
 
         // 底面(Y-)がsp1n方向なので、中心をsp1nへ -height/2 オフセット
         mesh.position = sp1p.add(sp1n.scale(-height / 2));
+        this.shift_position(mesh.position, sp1n, offset);
 
         const mat = new BABYLON.PBRMaterial("spineMat", this.scene);
         mat.albedoColor = color;

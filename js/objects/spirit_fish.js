@@ -70,7 +70,7 @@ export class Spirit_Fish extends Spirit {
         } else {
             mat.albedoTexture = this.get_stripe_texture("#ffff00","#ff8000",10,1);
         }
-        mat.metallic = 0.0;
+        mat.metallic = 0.5;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
         // mat.fillMode = BABYLON.Material.WireFrameFillMode;
@@ -86,7 +86,7 @@ export class Spirit_Fish extends Spirit {
         def = {
             name: "Attachment_Tentacle",
             socket: {front:-0.1, thetaDeg:90, phiDeg:0},
-            params: {segmentCont : 4, length : 0.25}
+            params: {segmentCont : 4, length : 0.25, offset : -0.1}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.thetaDeg *= -1;

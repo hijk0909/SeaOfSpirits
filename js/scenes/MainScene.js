@@ -21,6 +21,28 @@ export class MainScene extends Scene {
         this.stage_state_count = 0;
 
         GameState.stage_state = GLOBALS.STAGE_STATE.START;
+
+        this.sunLight_colors = [
+            {t:0.00, r:0.6, g:0.0, b:0.0, i: 5.0},
+            {t:0.25, r:0.5, g:0.8, b:1.0, i:10.0},
+            {t:0.50, r:1.0, g:0.0, b:0.2, i: 1.0},
+            {t:0.58, r:0.0, g:0.0, b:1.0, i: 0.2},
+            {t:0.75, r:0.0, g:0.0, b:0.1, i: 0.1},
+            {t:0.90, r:0.0, g:0.0, b:0.1, i: 1.0},
+            {t:0.95, r:1.0, g:0.1, b:0.1, i: 2.0},
+            {t:1.00, r:0.6, g:0.0, b:0.0, i: 5.0}
+        ]
+        this.background_colors = [
+            {t:0.00, r:0.20, g:0.00, b:0.00, i:0.0},
+            {t:0.05, r:0.02, g:0.06, b:0.30, i:0.0},
+            {t:0.25, r:0.01, g:0.10, b:0.50, i:0.0},
+            {t:0.40, r:0.02, g:0.08, b:0.30, i:0.0},
+            {t:0.50, r:0.30, g:0.02, b:0.10, i:0.0},
+            {t:0.55, r:0.00, g:0.00, b:0.15, i:0.0},
+            {t:0.75, r:0.00, g:0.00, b:0.10, i:0.0},
+            {t:0.95, r:0.00, g:0.00, b:0.05, i:0.0},
+            {t:1.00, r:0.20, g:0.00, b:0.00, i:0.0}
+        ]
     }
 
     // ■ セットアップ
@@ -66,11 +88,21 @@ export class MainScene extends Scene {
         const scene = this.scene;
         scene.clearColor = new BABYLON.Color4(0.0, 0.03, 0.10, 1.0);
 
-        // Light
-        // フィールド全体を明るく照らす
-        const hemiLight = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0.5, 1, 0), scene);
-        hemiLight.intensity = 0.4;
-        hemiLight.groundColor = new BABYLON.Color3(0.05, 0.05, 0.025);
+        // ■ ライト
+        // ◇半球ライト（環境光）
+        const hemiLight = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0.5, 1.0, 0.0), scene);
+        hemiLight.intensity = 0.05;
+        hemiLight.groundColor = new BABYLON.Color3(0.05, 0.05, 0.1);
+
+        // ◇平行光源（太陽光）
+        this.DAY_SPEED = 0.004; // 時間の進行速度 0.004
+        this.FLUCTUATION_SPEED = 0.007; // ゆらぎ光の周波数
+        this.sunLight = new BABYLON.DirectionalLight( "sun", new BABYLON.Vector3(-1, -1, 0),  scene);
+        this.sunLight.diffuse = new BABYLON.Color3();
+        this.timeOfDay = 0.75; // 0=朝、0.25=正午、0.5=夕方、0.75=真夜中
+        this.fluctuation = 0;
+        this.tmp_sunLightDirection = new BABYLON.Vector3();
+        this.tmp_timedColor = {r:0, g:0, b:0, i:0};
 
         // フォグ
         scene.fogEnabled = true;
@@ -159,6 +191,10 @@ export class MainScene extends Scene {
         //     return;
         // } 
         // console.log("GameState.stage_state:", GameState.stage_state);
+
+        // 開始時・終了後での GameState.asset.se などのアクセスを防ぐ
+        if (!GameState.asset) return;
+
         const delta_sec = delta / 1000;
 
         // ■ステージステータスによる状態遷移
@@ -243,7 +279,12 @@ export class MainScene extends Scene {
             GameState.ui_manager.update(time, delta);
         }
 
-        // 隠しキー
+        // ■ ライト
+        if (this.sunLight){
+            this.update_sunLight(time, delta);
+        }
+
+        // ■ 隠しキー
         if (GameState.inputKey && GameState.inputKey["q"]){
             this.game.sceneManager.changeScene(new TitleScene(this.game));
         }
@@ -256,6 +297,46 @@ export class MainScene extends Scene {
         }
 
         super.update();
+    } // End of update()
+
+    getTimedColorToRef(table, t, out) {
+        const len = table.length;
+        let a = table[0], b = table[len - 1];
+
+        for (let i = 0; i < len - 1; i++) {
+            if (t >= table[i].t && t < table[i+1].t) {
+                a = table[i];
+                b = table[i+1];
+                break;
+            }
+        }
+
+        const f = (t - a.t) / (b.t - a.t);
+        out.r = a.r + (b.r - a.r) * f;
+        out.g = a.g + (b.g - a.g) * f;
+        out.b = a.b + (b.b - a.b) * f;
+        out.i = a.i + (b.i - a.i) * f;
+    }
+
+    update_sunLight(time, delta){
+        this.timeOfDay = (this.timeOfDay + delta / 1000 * this.DAY_SPEED) % 1.0;
+        const angle = this.timeOfDay * Math.PI * 2;
+
+        // 太陽の方向ベクトルを更新（Y軸周りに回転）
+        this.tmp_sunLightDirection.set(Math.cos(angle), -Math.sin(angle), 0.3);
+        this.tmp_sunLightDirection.normalize();
+        this.sunLight.direction.copyFrom(this.tmp_sunLightDirection);
+
+        // 太陽光
+        this.getTimedColorToRef(this.sunLight_colors, this.timeOfDay, this.tmp_timedColor);
+        this.sunLight.diffuse.set(this.tmp_timedColor.r, this.tmp_timedColor.g, this.tmp_timedColor.b);
+        this.fluctuation = (this.fluctuation + delta / 10 * this.FLUCTUATION_SPEED) % 1.0;
+        this.sunLight.intensity = this.tmp_timedColor.i * (0.7 + Math.sin(this.fluctuation * Math.PI * 2) * 0.3);
+
+        // 背景色
+        this.getTimedColorToRef(this.background_colors, this.timeOfDay, this.tmp_timedColor);
+        this.scene.clearColor.set(this.tmp_timedColor.r, this.tmp_timedColor.g, this.tmp_timedColor.b);
+        this.scene.fogColor.set(this.tmp_timedColor.r, this.tmp_timedColor.g, this.tmp_timedColor.b);
     }
 
     // ポーズ処理

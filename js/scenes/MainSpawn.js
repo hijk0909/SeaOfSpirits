@@ -178,7 +178,7 @@ export class SpawnScheduler {
         this.ecosystem_period = 2.0;  // 23.0
 
         this.performance_counter = 0;
-        this.performance_period = 60.0;
+        this.performance_period = 120.0;
 
         this.initialize_class_state();
     }
@@ -203,11 +203,15 @@ export class SpawnScheduler {
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
 /*
+        for(let i=0; i<2; i++){
+            const pos = this.random_surface_position(5.0);
+            GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
+        }
+
         for(let i=0; i<3; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
         }
-
 
         for(let i=0; i<1; i++){
             const pos = this.random_surface_position(4.0);
@@ -219,10 +223,7 @@ export class SpawnScheduler {
             GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
         }
 
-        for(let i=0; i<1; i++){
-            const pos = this.random_surface_position(5.0);
-            GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
-        }
+
 
         for(let i=0; i<5; i++){
             const pos = this.random_surface_position(3.0);
@@ -343,6 +344,7 @@ export class SpawnScheduler {
         this.performance_counter += delta / 1000;
         if (this.performance_counter > this.performance_period){
             this.performance_counter = 0;
+
                 console.log(
                     "meshes:", this.scene.meshes.length,
                     "materials:", this.scene.materials.length,

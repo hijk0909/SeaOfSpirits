@@ -12,12 +12,13 @@ export class Attachment_Eye extends Attachment{
         super(spirit, socket);
 
         const { position: ep, normal: en } = socket;
-        const { scale = 1.0, alpha = 1.0, color = DEFAULT_COLOR, emissive = DEFAULT_EMISSIVE} = parameters;
+        const { scale = 1.0, alpha = 1.0, color = DEFAULT_COLOR, emissive = DEFAULT_EMISSIVE, offset = 0.0} = parameters;
 
         const mesh = BABYLON.MeshBuilder.CreateSphere( "eye", { diameter: 0.2 * scale, segments: 16}, this.scene );
         mesh.checkCollisions = false;
         mesh.isPickable = false;
         mesh.position.copyFrom(ep);
+        this.shift_position(mesh.position, en, offset);
         mesh.parent = this.parent;
 
         const mat = new BABYLON.PBRMaterial("eyeMat", this.scene);
