@@ -9,7 +9,7 @@ const STATE_ALIGNING = 0;
 const STATE_JETTING = 1;
 const STATE_COOLDOWN = 2;
 
-// クラゲ
+// イカ
 export class Spirit_Squid extends Spirit {
 
     constructor(scene, class_name, generation){
@@ -45,7 +45,6 @@ export class Spirit_Squid extends Spirit {
     create(genome_modifier){
         this.eye_emissive.copyFromFloats(0.0, 3.0, 3.0);
         super.create(genome_modifier);
-        this.setupDepthClone();
     }
 
     _create_body(){

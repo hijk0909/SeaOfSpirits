@@ -337,6 +337,76 @@ export class Spirit extends Collidable {
         return texture;
     }
 
+    get_spot_texture(c1, c2, num = 10) {
+        const size = 32;
+        const margin = 2;
+        const inner = size - margin * 2; // 点を配置する内側領域の一辺
+
+        // ── 1. ランダムな点を生成 ──────────────────────────────
+        const points = [];
+        for (let i = 0; i < num; i++) {
+            points.push({
+                x: margin + Math.random() * inner,
+                y: margin + Math.random() * inner,
+            });
+        }
+
+        // ── 2. 補助関数 ───────────────────────────────────────
+        const lerp = (a, b, t) => a + (b - a) * t;
+
+        // タイリングを考慮した距離（上下左右のラップを考慮）
+        const dist2 = (ax, ay, bx, by) => {
+            let dx = Math.abs(ax - bx);
+            let dy = Math.abs(ay - by);
+            if (dx > size / 2) dx = size - dx; // 境界をまたぐ最短距離
+            if (dy > size / 2) dy = size - dy;
+            return dx * dx + dy * dy;
+        };
+
+        // ── 3. 各ピクセルの色を決定 ───────────────────────────
+        const data = new Uint8Array(size * size * 4);
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+
+                // 最近傍 d1、2番目 d2 を探す
+                let d1 = Infinity, d2 = Infinity;
+                for (const p of points) {
+                    const d = dist2(x, y, p.x, p.y);
+                    if (d < d1) {
+                        d2 = d1;
+                        d1 = d;
+                    } else if (d < d2) {
+                        d2 = d;
+                    }
+                }
+
+                // d1=0 の場合のゼロ除算ガード
+                const sum = d1 + d2;
+                const rawT = sum > 0 ? d1 / sum : 0; // 0(中心) ～ 0.5(境界)
+
+                // 0～0.5 を 0～1 に正規化してスムーズステップ
+                const t01 = Math.min(rawT * 2, 1.0);           // 線形 0→1
+                const tc  = t01 * t01 * (3 - 2 * t01);        // smoothstep
+
+                const idx = (y * size + x) * 4;
+                data[idx    ] = (lerp(c2.r, c1.r, tc) * 255) | 0;
+                data[idx + 1] = (lerp(c2.g, c1.g, tc) * 255) | 0;
+                data[idx + 2] = (lerp(c2.b, c1.b, tc) * 255) | 0;
+                data[idx + 3] = 255;
+            }
+        }
+
+        // ── 4. BABYLON テクスチャ生成 ─────────────────────────
+        const texture = BABYLON.RawTexture.CreateRGBATexture(
+            data, size, size, this.scene,
+            false, false,
+            BABYLON.Texture.TRILINEAR_SAMPLINGMODE,
+            BABYLON.Constants.TEXTURETYPE_UNSIGNED_BYTE
+        );
+        return texture;
+    }
+
     flash(){
         this.flash_time = FLASH_TIME;
     }

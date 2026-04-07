@@ -202,7 +202,17 @@ export class SpawnScheduler {
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
+
+        for(let i=0; i<5; i++){
+            const pos = this.random_surface_position(3.0);
+            GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
+        }
 /*
+        for(let i=0; i<3; i++){
+            const pos = this.random_surface_position(4.0);
+            GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
+        }
+
         for(let i=0; i<2; i++){
             const pos = this.random_surface_position(5.0);
             GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
@@ -218,17 +228,7 @@ export class SpawnScheduler {
             GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
         }
 
-        for(let i=0; i<1; i++){
-            const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
-        }
 
-
-
-        for(let i=0; i<5; i++){
-            const pos = this.random_surface_position(3.0);
-            GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
-        }
 */ 
     }
 
@@ -366,7 +366,8 @@ export class SpawnScheduler {
 */
                 // this.dumpMaterials(this.scene);
                 // this.dumpTextures(this.scene);
-        }
+                this.dumpObservers(this.scene);
+            }
     }
 
     dumpTextures(scene) {
@@ -415,6 +416,32 @@ export class SpawnScheduler {
             });
     }
 
+    dumpObservers(scene) {
+        const observables = [
+            "onBeforeRenderObservable",
+            "onAfterRenderObservable",
+            "onPointerObservable",
+            "onNewMeshAddedObservable",
+            "onMeshRemovedObservable",
+            "onNewMaterialAddedObservable",
+            "onMaterialRemovedObservable",
+            "onBeforeCameraRenderObservable",
+            "onAfterCameraRenderObservable",
+            "onBeforeAnimationsObservable",
+            "onAfterAnimationsObservable",
+            "onDataLoadedObservable",
+            "onDisposeObservable"
+        ];
+
+        console.log("=== Observable observer counts ===");
+        for (const key of observables) {
+            const obs = scene[key];
+            if (obs && obs.observers) {
+                console.log(key + ":", obs.observers.length);
+            }
+        }
+    }
+
     cause_mutation(cls){
         // 感染数、餓死数、被食数、個体数からなる
         // 脅威（淘汰圧）に応じて（判定時の個体数が少ないほど淘汰圧は大きい）
@@ -454,7 +481,7 @@ export class SpawnScheduler {
 
             // プールから古い世代のキャラクターを削除する
             const num_removed = this.spawn.clean_pool(cls, st.generation);
-            console.log("pool removed:", num_removed);
+            // console.log("pool removed:", num_removed);
 
             // 突然変異判定変数のリセット
             st.num_infected= 0;

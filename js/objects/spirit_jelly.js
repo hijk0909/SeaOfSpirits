@@ -13,7 +13,7 @@ export class Spirit_Jelly extends Spirit {
         // クラス遺伝子
         this.genome.hp_max = 80;
         this.genome.hp_decrease = 0.026;
-        this.genome.disp_scale = 0.75;
+        this.genome.disp_scale = 0.90;
         this.genome_collision_radius = 0.15;
         this.genome_is_collidable = true;
         this.genome.mass = 1.0;
@@ -24,7 +24,8 @@ export class Spirit_Jelly extends Spirit {
 
         // クラス固有のパラメータ
         this.counter = 0;
-        this.base_color = new BABYLON.Color3();
+        this.texture_color_1 = new BABYLON.Color3();
+        this.texture_color_2 = new BABYLON.Color3();
         this.target = new BABYLON.Vector3(0,0,0);
     }
 
@@ -33,12 +34,15 @@ export class Spirit_Jelly extends Spirit {
         const speed_ratio = genome_modifier?.speed ?? 1.0;
         if (speed_ratio > 1.0){
             if (this.generation >= 2){
-                this.base_color.copyFromFloats(1.0, 0.4, 0.0);
+                this.texture_color_1.copyFromFloats(1.0, 0.0, 0.0);
+                this.texture_color_2.copyFromFloats(1.0, 0.8, 0.3);
             } else {
-                this.base_color.copyFromFloats(0.8, 1.0, 0.5);
+                this.texture_color_1.copyFromFloats(0.3, 0.6, 0.3);
+                this.texture_color_2.copyFromFloats(1.0, 1.0, 1.0);
             }
         } else {
-            this.base_color.copyFromFloats(0.0, 0.5, 1.0);
+            this.texture_color_1.copyFromFloats(0.0, 0.5, 1.0);
+            this.texture_color_2.copyFromFloats(1.0, 1.0, 1.0);
         }
 
         super.create(genome_modifier);
@@ -55,7 +59,8 @@ export class Spirit_Jelly extends Spirit {
         this.transform_to_jelly(this.mesh);
 
         const mat = new BABYLON.PBRMaterial("spirit_2_material", this.scene); 
-        mat.albedoColor.copyFrom(this.base_color);
+        // mat.albedoColor.copyFrom(this.base_color);
+        mat.albedoTexture = this.get_spot_texture(this.texture_color_1, this.texture_color_2, 30);
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         this.mesh.material = mat;

@@ -95,11 +95,11 @@ export class MainScene extends Scene {
         hemiLight.groundColor = new BABYLON.Color3(0.05, 0.05, 0.1);
 
         // ◇平行光源（太陽光）
+        this.timeOfDay = 0.1; // 0=朝、0.25=正午、0.5=夕方、0.75=真夜中
         this.DAY_SPEED = 0.004; // 時間の進行速度 0.004
         this.FLUCTUATION_SPEED = 0.007; // ゆらぎ光の周波数
         this.sunLight = new BABYLON.DirectionalLight( "sun", new BABYLON.Vector3(-1, -1, 0),  scene);
         this.sunLight.diffuse = new BABYLON.Color3();
-        this.timeOfDay = 0.75; // 0=朝、0.25=正午、0.5=夕方、0.75=真夜中
         this.fluctuation = 0;
         this.tmp_sunLightDirection = new BABYLON.Vector3();
         this.tmp_timedColor = {r:0, g:0, b:0, i:0};
