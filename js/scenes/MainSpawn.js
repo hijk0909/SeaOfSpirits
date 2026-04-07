@@ -202,12 +202,12 @@ export class SpawnScheduler {
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
-
+/*
         for(let i=0; i<5; i++){
             const pos = this.random_surface_position(3.0);
             GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
         }
-/*
+
         for(let i=0; i<3; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
@@ -345,29 +345,57 @@ export class SpawnScheduler {
         if (this.performance_counter > this.performance_period){
             this.performance_counter = 0;
 
-                console.log(
-                    "meshes:", this.scene.meshes.length,
-                    "materials:", this.scene.materials.length,
-                    "textures:", this.scene.textures.length,
-                    "geometries:", this.scene.geometries.length,
-                    "transformNodes:", this.scene.transformNodes.length
-                );
-/*
-                console.log(
-                    "active spirits:", GameState.spirits.length,
-                    "active effects:", GameState.effects.length
-                );
-                console.log("POOL:");
-                for (const cls of this.spawn.SpiritClasses){
-                    const {pool : pool} = this.spawn.SpiritClassList[cls];
-                    console.log(`${cls}:${pool.length}`);
-                }
-                console.log(`effect:${this.spawn.effect_pool.length}`);
-*/
-                // this.dumpMaterials(this.scene);
-                // this.dumpTextures(this.scene);
-                this.dumpObservers(this.scene);
+            // this.dumpObjects(this.scene);
+            // this.dumpMaterials(this.scene);
+            // this.dumpTextures(this.scene);
+            // this.dumpSceneProperties(this.scene);
+        }
+    }
+
+    dumpObjects(scene) {
+        console.log(
+            "active spirits:", GameState.spirits.length,
+            "active effects:", GameState.effects.length
+        );
+        console.log("POOL:");
+        for (const cls of this.spawn.SpiritClasses){
+            const {pool : pool} = this.spawn.SpiritClassList[cls];
+            console.log(`${cls}:${pool.length}`);
+        }
+        console.log(`effect:${this.spawn.effect_pool.length}`);
+    }
+
+    dumpSceneProperties(scene) {
+        console.log(
+            "meshes:", this.scene.meshes.length,
+            "materials:", this.scene.materials.length,
+            "textures:", this.scene.textures.length,
+            "geometries:", this.scene.geometries.length,
+            "transformNodes:", this.scene.transformNodes.length
+        );
+        const observables = [
+            "onBeforeRenderObservable",
+            "onAfterRenderObservable",
+            "onPointerObservable",
+            "onNewMeshAddedObservable",
+            "onMeshRemovedObservable",
+            "onNewMaterialAddedObservable",
+            "onMaterialRemovedObservable",
+            "onBeforeCameraRenderObservable",
+            "onAfterCameraRenderObservable",
+            "onBeforeAnimationsObservable",
+            "onAfterAnimationsObservable",
+            "onDataLoadedObservable",
+            "onDisposeObservable"
+        ];
+
+        console.log("=== Observable observer counts ===");
+        for (const key of observables) {
+            const obs = scene[key];
+            if (obs && obs.observers) {
+                console.log(key + ":", obs.observers.length);
             }
+        }
     }
 
     dumpTextures(scene) {
@@ -417,29 +445,7 @@ export class SpawnScheduler {
     }
 
     dumpObservers(scene) {
-        const observables = [
-            "onBeforeRenderObservable",
-            "onAfterRenderObservable",
-            "onPointerObservable",
-            "onNewMeshAddedObservable",
-            "onMeshRemovedObservable",
-            "onNewMaterialAddedObservable",
-            "onMaterialRemovedObservable",
-            "onBeforeCameraRenderObservable",
-            "onAfterCameraRenderObservable",
-            "onBeforeAnimationsObservable",
-            "onAfterAnimationsObservable",
-            "onDataLoadedObservable",
-            "onDisposeObservable"
-        ];
 
-        console.log("=== Observable observer counts ===");
-        for (const key of observables) {
-            const obs = scene[key];
-            if (obs && obs.observers) {
-                console.log(key + ":", obs.observers.length);
-            }
-        }
     }
 
     cause_mutation(cls){

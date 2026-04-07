@@ -16,6 +16,9 @@ export class MainAsset extends Asset {
         this.texture.particle = ptx;
 
         // ■　音声
+        this.bgm.main = await MyAudio.load( "./assets/audio/bgm/bgm_main.mp3");
+        this.bgm.main.setVolume(0.8);
+
         this.se.collision = await MyAudio.load( "./assets/audio/se/se_collision.mp3" );
         this.se.collision.setVolume(0.8);
 
@@ -27,6 +30,9 @@ export class MainAsset extends Asset {
 
         this.se.feeding = await MyAudio.load( "./assets/audio/se/se_feeding.mp3" );
         this.se.feeding.setVolume(0.8);
+
+        this.jingle.stagestart = await MyAudio.load( "./assets/audio/jingle/jingle_stage_start.mp3" );
+        this.jingle.stagestart.setVolume(0.6);
 
         GameState.game.sceneManager.add_progress(1.0);
         // console.log("asset.preload:end");

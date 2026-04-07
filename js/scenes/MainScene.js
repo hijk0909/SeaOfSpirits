@@ -204,6 +204,8 @@ export class MainScene extends Scene {
             GameState.spawn_scheduler.initial_placement();
             // [STATUS_MSG]
             GameState.ui_manager.show_status_message(`GET READY`);
+            // [SOUND]
+            GameState.asset.jingle.stagestart.play(false);
             // [WIPE]
             this.wipe.wipe_in(3000);
             // [TRANSIT]
@@ -217,6 +219,7 @@ export class MainScene extends Scene {
                 GameState.stage_state = GLOBALS.STAGE_STATE.PLAYING;
                 // [STATUS_MSG]
                 GameState.ui_manager.hide_status_message();
+                GameState.asset.bgm.main.play(true);
             }
         } else if (GameState.stage_state === GLOBALS.STAGE_STATE.PLAYING){
             // ◆プレイ中
@@ -343,7 +346,7 @@ export class MainScene extends Scene {
     toggle_pause(){
         if (GameState.stage_state === GLOBALS.STAGE_STATE.PLAYING){
             // [SOUND]
-            // GameState.bgm.pause();
+            GameState.asset.bgm.main.pause();
             // [STATUS_MSG]
             GameState.ui_manager.show_status_message(`PAUSE`);
             // [TRANSIT]
@@ -351,7 +354,7 @@ export class MainScene extends Scene {
             // console.log("pause");
         } else if ( GameState.stage_state === GLOBALS.STAGE_STATE.PAUSE){
             // [SOUND]
-            // GameState.bgm.resume();
+            GameState.asset.bgm.main.resume();
             // [STATUS_MSG]
             GameState.ui_manager.hide_status_message();
             // [TRANSIT]
