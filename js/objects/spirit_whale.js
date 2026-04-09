@@ -3,8 +3,6 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
 
-const TEST_COLOR = new BABYLON.Color3(0.0, 1.0, 0.0);
-
 // クジラ
 export class Spirit_Whale extends Spirit {
     constructor(scene, class_name, generation){    
@@ -27,6 +25,7 @@ export class Spirit_Whale extends Spirit {
         // クラス固有の設定      
         this.base_alpha = 0.5;
         this.base_color = new BABYLON.Color3(0.3, 0.82, 1.0);
+        this.base_emissive = new BABYLON.Color3(0.3, 0.82, 1.0);
 
         // 運動用変数
         this.life_time = 0;
@@ -39,6 +38,27 @@ export class Spirit_Whale extends Spirit {
     create(genome_modifier) {
         super.create(genome_modifier);
         this.setupDepthClone();
+    }
+
+    _set_shared_materials(){
+        let mat;
+
+        mat = new BABYLON.PBRMaterial("eye", this.scene);
+        mat.albedoColor = new BABYLON.Color3(0.8, 1.0, 1.0);
+        mat.emissiveColor = new BABYLON.Color3(0.8, 3.0, 3.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = this.base_alpha;
+        this.shared_materials.set("eye", mat);
+
+        mat = new BABYLON.PBRMaterial("parts", this.scene);
+        mat.albedoColor = this.base_color;
+        mat.metallic = 0.2;
+        mat.roughness = 1.0;
+        mat.alpha = this.base_alpha;
+        this.shared_materials.set("parts", mat);
+
+        mat = null;
     }
 
     _create_body(){
@@ -64,21 +84,21 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Mouth",
             socket: {front:0.0, thetaDeg:-5, phiDeg:0},
-            params: {hasTeeth :false, biteSpeed : 1.0, alpha : this.base_alpha, color : this.base_color}
+            params: {hasTeeth :false, biteSpeed : 1.0, lip_material_key : "parts"}
         };
         this.attachment_definitions.push(structuredClone(def));
 
         def = {
             name: "Attachment_Tail",
             socket: {front:0.0, thetaDeg:-5, phiDeg:180},
-            params: {scale : 3.0, twist : true, speed : 3.0, alpha : this.base_alpha, color : this.base_color}
+            params: {scale : 3.0, twist : true, speed : 3.0, material_key : "parts"}
         };
         this.attachment_definitions.push(structuredClone(def));
 
         def = {
             name: "Attachment_Eye",
             socket: {front:0.5, thetaDeg:25, phiDeg:-45},
-            params: {scale : 1.5, alpha : this.base_alpha}
+            params: {scale : 1.5, material_key : "eye"}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -87,7 +107,7 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:0.1, thetaDeg:-45, phiDeg:+90},
-            params: {bottomScale : 1.0, height : 2.0, twist : 90, alpha : this.base_alpha, color : this.base_color}
+            params: {bottomScale : 1.0, height : 2.0, twist : 90, material_key : "parts"}
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -96,7 +116,7 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Spine",
             socket: {front:0.4, thetaDeg:+60, phiDeg:0},
-            params: {diameterBottom : 0.5, height :1.0, alpha : this.base_alpha, color : this.base_color}
+            params: {diameterBottom : 0.5, height :1.0, material_key : "parts"}
         };
         this.attachment_definitions.push(structuredClone(def));
     }

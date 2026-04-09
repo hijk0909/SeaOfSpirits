@@ -53,6 +53,8 @@ export class Spirit extends Collidable {
         this.flash_time = 0;
         this.base_alpha = 1.0;
 
+        this.shared_materials = new Map(); // 共有マテリアル
+
         this.prev_LOD = false; //1フレーム前のLOD
 
         this.clone_observers = [];
@@ -96,6 +98,9 @@ export class Spirit extends Collidable {
 
         // 属性の設定
         this.set_property_from_genome();
+
+        // 共有マテリアルの設定
+        this._set_shared_materials();
 
         // ボディの生成
         this._create_body();
@@ -143,6 +148,10 @@ export class Spirit extends Collidable {
                 }
             }
         });
+    }
+
+    _set_shared_materials(){
+        // 共有用マテリアルの設定（継承先でオーバーライド）
     }
 
     _create_body(){
@@ -342,7 +351,7 @@ export class Spirit extends Collidable {
         const margin = 2;
         const inner = size - margin * 2; // 点を配置する内側領域の一辺
 
-        // ── 1. ランダムな点を生成 ──────────────────────────────
+        // ランダムな点を生成
         const points = [];
         for (let i = 0; i < num; i++) {
             points.push({
@@ -351,10 +360,7 @@ export class Spirit extends Collidable {
             });
         }
 
-        // ── 2. 補助関数 ───────────────────────────────────────
         const lerp = (a, b, t) => a + (b - a) * t;
-
-        // タイリングを考慮した距離（上下左右のラップを考慮）
         const dist2 = (ax, ay, bx, by) => {
             let dx = Math.abs(ax - bx);
             let dy = Math.abs(ay - by);
@@ -363,12 +369,10 @@ export class Spirit extends Collidable {
             return dx * dx + dy * dy;
         };
 
-        // ── 3. 各ピクセルの色を決定 ───────────────────────────
+        // ピクセルの色を決定
         const data = new Uint8Array(size * size * 4);
-
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
-
                 // 最近傍 d1、2番目 d2 を探す
                 let d1 = Infinity, d2 = Infinity;
                 for (const p of points) {
@@ -380,11 +384,9 @@ export class Spirit extends Collidable {
                         d2 = d;
                     }
                 }
-
                 // d1=0 の場合のゼロ除算ガード
                 const sum = d1 + d2;
                 const rawT = sum > 0 ? d1 / sum : 0; // 0(中心) ～ 0.5(境界)
-
                 // 0～0.5 を 0～1 に正規化してスムーズステップ
                 const t01 = Math.min(rawT * 2, 1.0);           // 線形 0→1
                 const tc  = t01 * t01 * (3 - 2 * t01);        // smoothstep
@@ -397,7 +399,7 @@ export class Spirit extends Collidable {
             }
         }
 
-        // ── 4. BABYLON テクスチャ生成 ─────────────────────────
+        // BABYLON テクスチャ生成
         const texture = BABYLON.RawTexture.CreateRGBATexture(
             data, size, size, this.scene,
             false, false,
@@ -524,10 +526,17 @@ export class Spirit extends Collidable {
             this.debugEllipsoid = null;
         }
 
+        // 共有マテリアルの廃棄
+        for (const material of this.shared_materials.values()) {
+            material.dispose();
+        }
+
+        // アタッチメントの廃棄
         for (const attachment of this.attachments){
             attachment.dispose();
         }
 
+        // ボディ用のテクスチャの廃棄
         if (this.texture) {
             if (this.mesh?.material instanceof BABYLON.PBRMaterial) {
                 this.mesh.material.albedoTexture = null;
@@ -538,6 +547,7 @@ export class Spirit extends Collidable {
             this.texture = null;
         }
 
+        // 半透明クローン用のオブザーバの廃棄
         this.clone_observers.forEach(obs => {
             this.scene.onBeforeRenderObservable.remove(obs);
         });

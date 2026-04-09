@@ -38,29 +38,6 @@ export class Attachment {
         }
     }
 
-
-/*
-    create_root(socket){
-        const root = new BABYLON.TransformNode("Attachment_Root", this.scene);
-        root.parent = this.parent;
-        root.position.copyFrom(socket.position);
-
-        // socket.normal の方向にroot（ローカルZ軸）を向ける
-        const normal = socket.normal.normalize();
-        const up = Math.abs(BABYLON.Vector3.Dot(normal, BABYLON.Vector3.Up())) < 0.99
-            ? BABYLON.Vector3.Up()
-            : BABYLON.Vector3.Right();
-        const rotMat = BABYLON.Matrix.LookAtLH(
-            BABYLON.Vector3.Zero(),
-            normal.scale(-1), // LookAtLHは-Z方向を向くので反転
-            up
-        ).invert();
-        root.rotationQuaternion = BABYLON.Quaternion.FromRotationMatrix(rotMat);
-
-        this.nodes.push(root);
-        return root;
-    }
-*/
     setEnabled(enable){
          for (const attachment of this.nodes){
             attachment.setEnabled(enable);
@@ -71,7 +48,8 @@ export class Attachment {
     }
 
     dispose(){
-        // root.dispose(false, true) で全部消えるはず
+        // root.dispose(false, true) でアタッチメントも全部消えるので以下は不要
+        // nodes は可視化制御（setEnabled) で必要なので削らないこと
         /*
         for (const attachment of this.nodes){
             if (!attachment.isDisposed()){

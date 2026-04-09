@@ -3,15 +3,13 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
-const DEFAULT_COLOR = new BABYLON.Color3(0.0, 1.0, 0.0);
-
 export class Attachment_Spine extends Attachment{
 
     constructor(spirit, socket, parameters = {}){
         super(spirit, socket);
 
         const { position: sp1p, normal: sp1n } = socket;
-        const { diameterBottom=0.2, height=0.45, alpha=1.0, color=DEFAULT_COLOR, offset = 0.0} = parameters;
+        const { diameterBottom=0.2, height=0.45, offset = 0.0, material_key = null} = parameters;
 
         const mesh = BABYLON.MeshBuilder.CreateCylinder("spine", {
             diameterTop: 0.0, diameterBottom: diameterBottom, height: height, tessellation: 8
@@ -34,12 +32,8 @@ export class Attachment_Spine extends Attachment{
         mesh.position = sp1p.add(sp1n.scale(-height / 2));
         this.shift_position(mesh.position, sp1n, offset);
 
-        const mat = new BABYLON.PBRMaterial("spineMat", this.scene);
-        mat.albedoColor = color;
-        mat.metallic = 0.2;
-        mat.roughness = 1.0;
-        mat.alpha = alpha;
-        mesh.material = mat;
+        // マテリアルの設定
+        mesh.material = this.spirit.shared_materials.get(material_key);
 
         mesh.parent = this.parent;
         this.nodes.push(mesh);

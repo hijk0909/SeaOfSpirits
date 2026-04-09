@@ -3,15 +3,13 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
-const DEFAULT_COLOR = new BABYLON.Color3(1.0, 0.0, 0.0);
-
 export class Attachment_Tail extends Attachment{
 
     constructor(spirit, socket, parameters = {}){
         super(spirit, socket);
 
         const { position: tp, normal: tn } = socket;
-        const { scale = 1.0 , twist = false, speed = 7.0, alpha = 1.0, color = DEFAULT_COLOR, offset = 0.0} = parameters;
+        const { scale = 1.0 , twist = false, speed = 7.0, offset = 0.0, material_key = null} = parameters;
         this.normal = tn;
 
         const positions = [
@@ -26,11 +24,7 @@ export class Attachment_Tail extends Attachment{
         vertexData.indices = indices;
         vertexData.applyToMesh(tail);
 
-        const mat = new BABYLON.PBRMaterial("tailMat", this.scene);
-        mat.albedoColor = color;
-        mat.metallic = 0.2;
-        mat.roughness = 1.0;
-        mat.alpha = alpha;
+        const mat = this.spirit.shared_materials.get(material_key);
         mat.backFaceCulling = false;
         tail.material = mat;
 

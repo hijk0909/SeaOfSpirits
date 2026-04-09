@@ -3,15 +3,13 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
-const DEFAULT_COLOR = new BABYLON.Color3(0.8, 1.0, 0.0);
-
 export class Attachment_Fin extends Attachment{
 
     constructor(spirit, socket, parameters){
         super(spirit, socket);
 
         const { position: fp, normal: fn } = socket;
-        const { bottomScale=1.0, height=1.0, twist=0.0, alpha=1.0, color=DEFAULT_COLOR, offset = 0.0} = parameters;
+        const { bottomScale=1.0, height=1.0, twist=0.0, offset = 0.0, material_key = null} = parameters;
 
         // 頂点座標
         const positions = [
@@ -56,11 +54,7 @@ export class Attachment_Fin extends Attachment{
         // （３）合成クオータニオンを代入
         mesh.rotationQuaternion = qAlign.multiply(qTwist);
 
-        const mat = new BABYLON.PBRMaterial("finMat", this.scene);
-        mat.albedoColor = color;
-        mat.metallic = 0.2;
-        mat.roughness = 1.0;
-        mat.alpha = alpha;
+        const mat = this.spirit.shared_materials.get(material_key);
         mat.backFaceCulling = false;
         mesh.material = mat;
 

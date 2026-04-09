@@ -33,6 +33,19 @@ export class Spirit_Plankton extends Spirit {
         super.create(genome_modifier);
     }
 
+    _set_shared_materials(){
+        let mat;
+
+        mat = new BABYLON.PBRMaterial("spine", this.scene);
+        mat.albedoColor = new BABYLON.Color3(0.0, 0.8, 0.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("spine", mat);
+
+        mat = null;
+    }
+
     _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameter: 0.5, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
@@ -52,7 +65,7 @@ export class Spirit_Plankton extends Spirit {
     _set_attachment_definitions(){
         let def = {
             name: "Attachment_Spine",
-            params: {diameterBottom : 0.1, height: 0.15}
+            params: {diameterBottom : 0.1, height: 0.15, material_key: "spine"}
         }
         for ( let i = 0 ; i < this.num_spines ; i++){
             const {theta, phi} = this.get_golden_spiral_angles(this.num_spines, i);

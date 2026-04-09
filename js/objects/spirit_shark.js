@@ -61,6 +61,41 @@ export class Spirit_Shark extends Spirit {
         super.create(genome_modifier);
     }
 
+    _set_shared_materials(){
+        let mat;
+
+        mat = new BABYLON.PBRMaterial("eye", this.scene);
+        mat.albedoColor = new BABYLON.Color3(1.0, 0.0, 0.0);
+        mat.emissiveColor =   new BABYLON.Color3(6.0, 0.0, 0.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("eye", mat);
+
+        mat = new BABYLON.PBRMaterial("lip", this.scene);
+        mat.albedoColor = new BABYLON.Color3(1.0, 0.0, 0.0);
+        mat.metallic = 0.2;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("lip", mat);
+
+        mat = new BABYLON.PBRMaterial("tooth", this.scene);
+        mat.albedoColor = new BABYLON.Color3(1.0, 1.0, 1.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("tooth", mat);
+
+        mat = new BABYLON.PBRMaterial("parts", this.scene);
+        mat.albedoColor = this.base_color;
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("parts", mat);
+
+        mat = null;
+    }
+
     _create_body(){
         // console.trace("_create_body called");
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameterZ: 3.5, diameterX: 1.5, diameterY: 2.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
@@ -87,42 +122,42 @@ export class Spirit_Shark extends Spirit {
         def = {
             name: "Attachment_Mouth",
             socket: {front:0.0, thetaDeg:-5, phiDeg:0},
-            params: {hasTeeth : true, biteSpeed : 3.0, scale : mouth_scale, offset : -0.1}
+            params: {hasTeeth : true, biteSpeed : 3.0, scale : mouth_scale, lip_material_key : "lip", tooth_material_key : "tooth", offset : -0.1}
         };
         this.attachment_definitions.push(structuredClone(def));
 
         def = {
             name: "Attachment_Tail",
             socket: {front:0.0, thetaDeg:0, phiDeg:180},
-            params: {scale : 1.5, color : this.base_color}
+            params: {scale : 1.5, material_key : "parts"}
         };
         this.attachment_definitions.push(structuredClone(def));
 
         def = {
             name: "Attachment_Fin",
             socket: {front:0.0, thetaDeg:+75, phiDeg:0},
-            params: {bottomScale : 1.0, height : 1.5, twist : 90, color : this.base_color}
+            params: {bottomScale : 1.0, height : 1.5, twist : 90, material_key : "parts"}
         }
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.3, thetaDeg:-25, phiDeg:-30};
-        def.params = {bottomScale : 1.5, height : 2.0, twist : 90, color : this.base_color};
+        def.params = {bottomScale : 1.5, height : 2.0, twist : 90, material_key : "parts"};
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:+45, phiDeg: 180};
-        def.params = {bottomScale : 0.6, height : 1.1, color : this.base_color};
+        def.params = {bottomScale : 0.6, height : 1.1, material_key : "parts"};
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:-35, phiDeg: 180};
-        def.params = {bottomScale : 0.6, height : 1.1, color : this.base_color};
+        def.params = {bottomScale : 0.6, height : 1.1, material_key : "parts"};
         this.attachment_definitions.push(structuredClone(def));
         
         def = {
             name: "Attachment_Eye",
             socket: {front:0.8, thetaDeg:+45, phiDeg:-55},
-            params: {scale : 1.0, emissive : this.eye_emissive}
+            params: {scale : 1.0, material_key : "eye"}
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;

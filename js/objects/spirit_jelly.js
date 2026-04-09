@@ -48,6 +48,26 @@ export class Spirit_Jelly extends Spirit {
         super.create(genome_modifier);
     }
 
+    _set_shared_materials(){
+        let mat;
+
+        mat = new BABYLON.PBRMaterial("tentacle", this.scene);
+        mat.albedoColor = new BABYLON.Color3(0.0, 1.0, 1.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("tentacle", mat);
+
+        mat = new BABYLON.PBRMaterial("spine", this.scene);
+        mat.albedoColor = new BABYLON.Color3(1.0, 0.8, 0.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("spine", mat);
+
+        mat = null;
+    }
+
     _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "spirit_2_body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
@@ -72,7 +92,7 @@ export class Spirit_Jelly extends Spirit {
 
         def = {
             name: "Attachment_Tentacle",
-            params: {segmentCont : 4, length : 0.30, thicknessBase : 0.2, thicknessTip : 0.06}
+            params: {segmentCont : 4, length : 0.30, thicknessBase : 0.2, thicknessTip : 0.06, material_key : "tentacle"}
         };
         for (let i = 0; i < 360; i += 120){
             const {theta, phi} = MyMath.rotate_to_front(-30, i);
@@ -82,7 +102,7 @@ export class Spirit_Jelly extends Spirit {
 
         def = {
             name: "Attachment_Spine",
-            params: {diameterBottom : 0.15, height :0.24}
+            params: {diameterBottom : 0.15, height :0.24, material_key : "spine"}
         };
         for (let i = 0; i < 360; i += 90){
             const {theta, phi} = MyMath.rotate_to_front(+60, i);

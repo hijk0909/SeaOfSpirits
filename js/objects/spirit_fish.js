@@ -54,6 +54,41 @@ export class Spirit_Fish extends Spirit {
         super.create(genome_modifier);
     }
 
+    _set_shared_materials(){
+        let mat;
+
+        mat = new BABYLON.PBRMaterial("eye", this.scene);
+        mat.albedoColor = new BABYLON.Color3(0.4, 0.8, 1.0);
+        mat.emissiveColor =   new BABYLON.Color3(3.0, 5.0, 1.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("eye", mat);
+
+        mat = new BABYLON.PBRMaterial("tentacle", this.scene);
+        mat.albedoColor = new BABYLON.Color3(1.0, 1.0, 0.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("tentacle", mat);
+
+        mat = new BABYLON.PBRMaterial("spine", this.scene);
+        mat.albedoColor = new BABYLON.Color3(0.0, 1.0, 0.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("spine", mat);
+
+        mat = new BABYLON.PBRMaterial("tail", this.scene);
+        mat.albedoColor = new BABYLON.Color3(1.0, 0.0, 0.0);
+        mat.metallic = 1.0;
+        mat.roughness = 1.0;
+        mat.alpha = 1.0;
+        this.shared_materials.set("tail", mat);
+
+        mat = null;
+    }
+
     _create_body(){
         this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
@@ -86,7 +121,7 @@ export class Spirit_Fish extends Spirit {
         def = {
             name: "Attachment_Tentacle",
             socket: {front:-0.1, thetaDeg:90, phiDeg:0},
-            params: {segmentCont : 4, length : 0.25, offset : -0.1}
+            params: {segmentCont : 4, length : 0.25, offset : -0.1, material_key : "tentacle"}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.thetaDeg *= -1;
@@ -95,7 +130,7 @@ export class Spirit_Fish extends Spirit {
         def = {
             name: "Attachment_Spine",
             socket: {front:-0.2, thetaDeg:-45, phiDeg: +90},
-            params: {diameterBottom : 0.2, height :0.45}
+            params: {diameterBottom : 0.2, height :0.45, material_key : "spine"}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -104,14 +139,14 @@ export class Spirit_Fish extends Spirit {
         def ={
             name: "Attachment_Tail",
             socket: {front:0.0, thetaDeg:15, phiDeg: 180},
-            params:  {scale : 1.0}
+            params:  {scale : 1.0, material_key : "tail"}
         };
         this.attachment_definitions.push(structuredClone(def));
 
         def ={
             name: "Attachment_Eye",
             socket: {front:0.3, thetaDeg:45, phiDeg: -90},
-            params:  {scale : 1.0, emissive : this.eye_emissive}
+            params:  {scale : 1.0, material_key : "eye"}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;

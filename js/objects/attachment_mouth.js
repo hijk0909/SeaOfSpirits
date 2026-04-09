@@ -3,9 +3,6 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
-const DEFAULT_COLOR_LIP = new BABYLON.Color3(1.0, 0.0, 0.0);
-const DEFAULT_COLOR_TOOTH = new BABYLON.Color3(1.0, 1.0, 1.0);
-
 export class Attachment_Mouth extends Attachment{
 
     constructor(spirit, socket, parameters){
@@ -83,7 +80,7 @@ export class Attachment_Mouth extends Attachment{
     */
     create_lip(root, parameters = {}) {
 
-        const {R=2.0, R_ratio = 0.2, Z_bend = 5.0, Z_offset = 0.15, alpha = 1.0, color = DEFAULT_COLOR_LIP} = parameters;
+        const {R=2.0, R_ratio = 0.2, Z_bend = 5.0, Z_offset = 0.15, lip_material_key = null} = parameters;
 
         const sphere = BABYLON.MeshBuilder.CreateSphere("lipSphere", { diameter: R, segments: 32, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene);
         sphere.checkCollisions = false;
@@ -136,13 +133,17 @@ export class Attachment_Mouth extends Attachment{
         BABYLON.VertexData.ComputeNormals(positions, sphere.getIndices(), normals);
         sphere.updateVerticesData(BABYLON.VertexBuffer.NormalKind, normals);
 
-        // マテリアル
+        // マテリアルの設定
+        sphere.material = this.spirit.shared_materials.get(lip_material_key);
+
+        /*
         const mat = new BABYLON.PBRMaterial("lipMat", this.scene);
         mat.albedoColor = color;
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = alpha;
         sphere.material = mat;
+        */
         
         sphere.parent = root;
         this.nodes.push(sphere);
@@ -150,7 +151,7 @@ export class Attachment_Mouth extends Attachment{
         return sphere;
     }
 
-    create_tooth(position, diameterBottom, height, upper, alpha=1.0, color=DEFAULT_COLOR_TOOTH) {
+    create_tooth(position, diameterBottom, height, upper, tooth_material_key = null) {
 
         let dt, db, p;
         if (!upper){
@@ -169,19 +170,22 @@ export class Attachment_Mouth extends Attachment{
         mesh.isPickable = false;
         mesh.position = p;
 
+        mesh.material = this.spirit.shared_materials.get(tooth_material_key);
+        /*
         const mat = new BABYLON.PBRMaterial("toothMat", this.scene);
         mat.albedoColor = new BABYLON.Color3(1.0, 1.0, 1.0);
         mat.metallic = 0.2;
         mat.roughness = 1.0;
         mat.alpha = alpha;
         mesh.material = mat;
+        */
 
         this.nodes.push(mesh);
         return mesh;
     }
 
     create_teeth(root, upper, num_teeth, parameters = {}){
-        const {diameterBottom=0.3, height=0.7, R=2.0, Z_bend = 5.0, Z_offset = 0.10, alpha = 1.0, color = DEFAULT_COLOR_TOOTH} = parameters;
+        const {diameterBottom=0.3, height=0.7, R=2.0, Z_bend = 5.0, Z_offset = 0.10, tooth_material_key = ""} = parameters;
         let startAngleDeg, endAngleDeg;
         const maxAngleDeg = 25;
         const stepAngleDeg = maxAngleDeg / (num_teeth / 2);
@@ -196,7 +200,7 @@ export class Attachment_Mouth extends Attachment{
             const angleRad = BABYLON.Tools.ToRadians(angleDeg);
             const position = new BABYLON.Vector3( R * Math.sin(angleRad), 0, Z_bend * (Math.cos(angleRad) - 1)+ Z_offset);
             const scale = ((maxAngleDeg - Math.abs(angleDeg) )/ maxAngleDeg) * 0.6 + 0.4;
-            const tooth = this.create_tooth(position, diameterBottom * scale, height * scale, upper, alpha, color);
+            const tooth = this.create_tooth(position, diameterBottom * scale, height * scale, upper, tooth_material_key);
             tooth.parent = root;
         }
     }

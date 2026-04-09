@@ -202,34 +202,34 @@ export class SpawnScheduler {
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
-/*
-        for(let i=0; i<5; i++){
-            const pos = this.random_surface_position(3.0);
-            GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
-        }
 
-        for(let i=0; i<3; i++){
-            const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
-        }
-
-        for(let i=0; i<2; i++){
-            const pos = this.random_surface_position(5.0);
-            GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
-        }
-
-        for(let i=0; i<3; i++){
-            const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
-        }
-
-        for(let i=0; i<1; i++){
+        for(let i=0; i<0; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
         }
 
 
-*/ 
+        for(let i=0; i<0; i++){
+            const pos = this.random_surface_position(5.0);
+            GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
+        }
+        
+        for(let i=0; i<0; i++){
+            const pos = this.random_surface_position(4.0);
+            GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
+        }
+
+
+        for(let i=0; i<0; i++){
+            const pos = this.random_surface_position(3.0);
+            GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
+        }
+
+        for(let i=0; i<0; i++){
+            const pos = this.random_surface_position(4.0);
+            GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
+        }
+
     }
 
     initialize_class_state(){
@@ -345,10 +345,10 @@ export class SpawnScheduler {
         if (this.performance_counter > this.performance_period){
             this.performance_counter = 0;
 
+            this.dumpSceneProperties(this.scene);
             // this.dumpObjects(this.scene);
             // this.dumpMaterials(this.scene);
             // this.dumpTextures(this.scene);
-            // this.dumpSceneProperties(this.scene);
         }
     }
 
@@ -373,6 +373,7 @@ export class SpawnScheduler {
             "geometries:", this.scene.geometries.length,
             "transformNodes:", this.scene.transformNodes.length
         );
+        /*
         const observables = [
             "onBeforeRenderObservable",
             "onAfterRenderObservable",
@@ -396,6 +397,7 @@ export class SpawnScheduler {
                 console.log(key + ":", obs.observers.length);
             }
         }
+        */
     }
 
     dumpTextures(scene) {
