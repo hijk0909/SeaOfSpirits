@@ -2,6 +2,7 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 // クジラ
 export class Spirit_Whale extends Spirit {
@@ -25,7 +26,6 @@ export class Spirit_Whale extends Spirit {
         // クラス固有の設定      
         this.base_alpha = 0.5;
         this.base_color = new BABYLON.Color3(0.3, 0.82, 1.0);
-        this.base_emissive = new BABYLON.Color3(0.3, 0.82, 1.0);
 
         // 運動用変数
         this.life_time = 0;
@@ -36,6 +36,8 @@ export class Spirit_Whale extends Spirit {
     }
 
     create(genome_modifier) {
+        const speed_ratio = genome_modifier?.speed ?? 1.0;
+        this.base_color.copyFrom(MyDraw.saturatedColor(speed_ratio));
         super.create(genome_modifier);
         this.setupDepthClone();
     }

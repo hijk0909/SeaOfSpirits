@@ -2,6 +2,7 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 const HP_DECREASE = 0.002;
 const HP_ABSORB = 0.04;

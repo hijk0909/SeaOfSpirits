@@ -3,6 +3,7 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
 import { MyMath } from "../utils/MathUtils.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 // クラゲ
 export class Spirit_Jelly extends Spirit {
@@ -12,7 +13,7 @@ export class Spirit_Jelly extends Spirit {
 
         // クラス遺伝子
         this.genome.hp_max = 80;
-        this.genome.hp_decrease = 0.026;
+        this.genome.hp_decrease = 0.013;
         this.genome.disp_scale = 0.90;
         this.genome_collision_radius = 0.15;
         this.genome_is_collidable = true;
@@ -30,20 +31,9 @@ export class Spirit_Jelly extends Spirit {
     }
 
     create(genome_modifier){
-
         const speed_ratio = genome_modifier?.speed ?? 1.0;
-        if (speed_ratio > 1.0){
-            if (this.generation >= 2){
-                this.texture_color_1.copyFromFloats(1.0, 0.0, 0.0);
-                this.texture_color_2.copyFromFloats(1.0, 0.8, 0.3);
-            } else {
-                this.texture_color_1.copyFromFloats(0.3, 0.6, 0.3);
-                this.texture_color_2.copyFromFloats(1.0, 1.0, 1.0);
-            }
-        } else {
-            this.texture_color_1.copyFromFloats(0.0, 0.5, 1.0);
-            this.texture_color_2.copyFromFloats(1.0, 1.0, 1.0);
-        }
+        this.texture_color_1.copyFrom(MyDraw.saturatedColor(speed_ratio));
+        this.texture_color_2.copyFromFloats(1.0, 1.0, 0.0);
 
         super.create(genome_modifier);
     }

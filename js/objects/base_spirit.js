@@ -33,6 +33,7 @@ export class Spirit extends Collidable {
             predation_socket : {front:0.0, theta:0.0, phi:0.0},
             predation_radius : 0.2
         }
+        this.genome_modifier = {};
 
         this.attachments = [];
         this.attachment_definitions = [];
@@ -66,12 +67,16 @@ export class Spirit extends Collidable {
     // genomeの変更
     modify_genome(genome_modifier){
         const genomeOps = {
-            hp_max:                 (g, v) => g.hp_max   *= v,
-            mass:                   (g, v) => g.mass     *= v,
-            speed:                  (g, v) => g.speed    *= v,
-            accel:                  (g, v) => g.accel    *= v,
-            predation_radius:       (g, v) => g.predation_radius *= v,
-            predation_classes:      (g, v) => g.predation_classes = v
+            hp_max:                 (g, v) => g.hp_max              *= v,
+            hp_decrease:            (g, v) => g.hp_decrease         *= v,
+            disp_scale:             (g, v) => g.disp_scale          *= v,
+            collision_radius:       (g, v) => g.collision_radius    *= v,
+            mass:                   (g, v) => g.mass                *= v,
+            speed:                  (g, v) => g.speed               *= v,
+            rotate_speed:           (g, v) => g.rotate_speed        *= v,
+            accel:                  (g, v) => g.accel               *= v,
+            predation_radius:       (g, v) => g.predation_radius    *= v,
+            predation_classes:      (g, v) => g.predation_classes   = v
         };
 
         for (const key in genome_modifier) {
@@ -94,6 +99,7 @@ export class Spirit extends Collidable {
 
     create(genome_modifier){
         // genomeの修正
+        this.genome_modifier = genome_modifier;
         this.modify_genome(genome_modifier);
 
         // 属性の設定
@@ -252,29 +258,41 @@ export class Spirit extends Collidable {
     }
 
     get_stripe_texture(color1, color2, uScale = 20, vScale = 1) {
-        const size = 4; // 小さくして toDataURL() の負荷を最小化
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
+        // 横2px（左半分=color1、右半分=color2）× 縦1px の最小テクスチャ
+        const width = 2;
+        const height = 1;
+        const data = new Uint8Array(width * height * 4);
 
-        ctx.fillStyle = color1; // 地の色
-        ctx.fillRect(0, 0, size/2, size);
-        ctx.fillStyle = color2; // 縞の色
-        ctx.fillRect(size/2, 0, size/2, size);
+        // 左ピクセル: color1
+        data[0] = Math.round(color1.r * 255);
+        data[1] = Math.round(color1.g * 255);
+        data[2] = Math.round(color1.b * 255);
+        data[3] = 255;
 
-        const texture = new BABYLON.Texture(canvas.toDataURL(), this.scene);
-        
+        // 右ピクセル: color2
+        data[4] = Math.round(color2.r * 255);
+        data[5] = Math.round(color2.g * 255);
+        data[6] = Math.round(color2.b * 255);
+        data[7] = 255;
+
+        const texture = BABYLON.RawTexture.CreateRGBATexture(
+            data,
+            width,
+            height,
+            this.scene,
+            false,              // generateMipMaps: 小さなテクスチャなので不要
+            false,              // invertY
+            BABYLON.Texture.NEAREST_SAMPLINGMODE  // ぼかさずシャープに縞を描画
+        );
+
         // 縞の数
-        texture.uScale = uScale; 
+        texture.uScale = uScale;
         texture.vScale = vScale;
-
         // 継ぎ目を綺麗にするリピート設定
         texture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
 
         // dispose() 用に保存
         this.texture = texture;
-
         return texture;
     }
 

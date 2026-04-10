@@ -26,7 +26,7 @@ export class Drawable {
     }
 
     deactivate(){
-        this.alive = false;
+        this.alive = false; //本来不要 (!alive → deavtivate という順序)
     }
 
     update(time, delta){

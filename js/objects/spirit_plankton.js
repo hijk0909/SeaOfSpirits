@@ -2,6 +2,7 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 // プランクトン
 export class Spirit_Plankton extends Spirit {

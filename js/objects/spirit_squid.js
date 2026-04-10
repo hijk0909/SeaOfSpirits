@@ -3,6 +3,7 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
 import { MyMath } from "../utils/MathUtils.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 const STATE_ALIGNING = 0;
 const STATE_COOLDOWN = 2;
@@ -31,6 +32,7 @@ export class Spirit_Squid extends Spirit {
         this.state_counter = 0;
         this.aligning_speed = 0.01;
         this.base_color = new BABYLON.Color3(0.0, 0.5, 1.0);
+        this.tentacle_color = new BABYLON.Color3(0.7, 1.0, 1.0);
 
         // テンポラリ変数
         this.tmp_target = new BABYLON.Vector3(0,0,0);
@@ -39,6 +41,9 @@ export class Spirit_Squid extends Spirit {
     }
 
     create(genome_modifier){
+        const speed_ratio = genome_modifier?.speed ?? 1.0;
+        this.tentacle_color.copyFrom(MyDraw.saturatedColor(speed_ratio));
+
         super.create(genome_modifier);
     }
 
@@ -61,7 +66,7 @@ export class Spirit_Squid extends Spirit {
         this.shared_materials.set("fin", mat);
 
         mat = new BABYLON.PBRMaterial("tentacle", this.scene);
-        mat.albedoColor = new BABYLON.Color3(0.7, 1.0, 1.0);
+        mat.albedoColor.copyFrom(this.tentacle_color);
         mat.metallic = 1.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;

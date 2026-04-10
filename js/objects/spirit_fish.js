@@ -2,6 +2,7 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 // 魚
 export class Spirit_Fish extends Spirit {
@@ -26,7 +27,7 @@ export class Spirit_Fish extends Spirit {
         this.perceptionRadius = 4.0;
         this.separationRadius = 3.0;
         this.base_color = new BABYLON.Color3();
-        this.eye_emissive = new BABYLON.Color3();
+        this.base_color_2 = new BABYLON.Color3();
 
         // テンポラリ変数
         this.tmpSeparation = new BABYLON.Vector3();
@@ -41,15 +42,9 @@ export class Spirit_Fish extends Spirit {
     }
 
     create(genome_modifier){
-
         const speed_ratio = genome_modifier?.speed ?? 1.0;
-        if (speed_ratio > 1.0){
-            this.base_color.copyFromFloats(1.0, 0.6, 0.2);
-        } else {
-            this.base_color.copyFromFloats(0.3, 1.0, 1.0);
-        }
-
-        this.eye_emissive.copyFromFloats(3.0, 5.0, 1.0);
+        this.base_color.copyFrom(MyDraw.saturatedColor(speed_ratio));
+        this.base_color_2.copyFromFloats(1.0, 1.0, 0.0);
 
         super.create(genome_modifier);
     }
@@ -59,7 +54,7 @@ export class Spirit_Fish extends Spirit {
 
         mat = new BABYLON.PBRMaterial("eye", this.scene);
         mat.albedoColor = new BABYLON.Color3(0.4, 0.8, 1.0);
-        mat.emissiveColor =   new BABYLON.Color3(3.0, 5.0, 1.0);
+        mat.emissiveColor =  new BABYLON.Color3(3.0, 5.0, 1.0);
         mat.metallic = 1.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
@@ -73,7 +68,7 @@ export class Spirit_Fish extends Spirit {
         this.shared_materials.set("tentacle", mat);
 
         mat = new BABYLON.PBRMaterial("spine", this.scene);
-        mat.albedoColor = new BABYLON.Color3(0.0, 1.0, 0.0);
+        mat.albedoColor.copyFrom(this.base_color);
         mat.metallic = 1.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
@@ -100,11 +95,14 @@ export class Spirit_Fish extends Spirit {
         this.transform_to_streamline(this.mesh);
 
         const mat = new BABYLON.PBRMaterial("material", this.scene); 
-        if (this.generation === 0){
-            mat.albedoColor.copyFrom(this.base_color);
+
+        const speed_ratio = this.genome_modifier?.speed ?? 1.0;
+        if (speed_ratio > 1.0){
+            mat.albedoTexture = this.get_stripe_texture(this.base_color, this.base_color_2,10,1);
         } else {
-            mat.albedoTexture = this.get_stripe_texture("#ffff00","#ff8000",10,1);
+            mat.albedoColor.copyFrom(this.base_color);
         }
+
         mat.metallic = 0.5;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
@@ -118,10 +116,11 @@ export class Spirit_Fish extends Spirit {
 
         let def;
 
+        const tentacle_length = 0.25 * this.genome_modifier.speed;
         def = {
             name: "Attachment_Tentacle",
             socket: {front:-0.1, thetaDeg:90, phiDeg:0},
-            params: {segmentCont : 4, length : 0.25, offset : -0.1, material_key : "tentacle"}
+            params: {segmentCont : 4, length : tentacle_length, offset : -0.1, material_key : "tentacle"}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.thetaDeg *= -1;

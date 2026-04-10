@@ -205,18 +205,21 @@ export class SpawnScheduler {
 
         for(let i=0; i<0; i++){
             const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
+            GameState.spawn.activate_spirit("Spirit_Whale", pos, 0, this.get_genome_modifier(Math.random()*1.5 + 0.5, 100)); // [TEST]
+            //GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
         }
 
 
-        for(let i=0; i<0; i++){
+        for(let i=0; i<5; i++){
             const pos = this.random_surface_position(5.0);
-            GameState.spawn.activate_spirit("Spirit_Fish", pos, 0);
+            GameState.spawn.activate_spirit("Spirit_Fish", pos, 0, this.get_genome_modifier(Math.random()*1.5 + 0.5, 100)); // [TEST]
         }
         
-        for(let i=0; i<0; i++){
+        for(let i=0; i<3; i++){
             const pos = this.random_surface_position(4.0);
-            GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
+            GameState.spawn.activate_spirit("Spirit_Shark", pos, 0, this.get_genome_modifier(Math.random()*1.5 + 0.5, 100)); // [TEST]
+            // GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);
+            this.cause_mutation("Spirit_Shark");
         }
 
 
@@ -244,6 +247,7 @@ export class SpawnScheduler {
         st.count = 0;
         st.lower_hp_basis = 0.0;
         st.period_basis = 1.0;
+        st.genome_modifier = this.get_genome_modifier(1.0, 0);
 
         st = this.spawn.spirit_class_state["Spirit_Virus"];
         st.lower_chain = ["Spirit_Fish", "Spirit_Jelly", "Spirit_Shark", "Spirit_Squid", "Spirit_Whale"];
@@ -253,6 +257,7 @@ export class SpawnScheduler {
         st.count = 0;
         st.lower_hp_basis = 2540;
         st.period_basis = 1.27;
+        st.genome_modifier = this.get_genome_modifier(1.0, 0);
 
         st = this.spawn.spirit_class_state["Spirit_Fish"];
         st.lower_chain = ["Spirit_Plankton"];
@@ -262,6 +267,7 @@ export class SpawnScheduler {
         st.count = 0;
         st.lower_hp_basis = 180;
         st.period_basis = 3.5;
+        st.genome_modifier = this.get_genome_modifier(Math.random()*1.5 + 0.5, 100); // [TEST]
 
         st = this.spawn.spirit_class_state["Spirit_Jelly"];
         st.lower_chain = ["Spirit_Plankton"];
@@ -270,7 +276,8 @@ export class SpawnScheduler {
         st.period = 0;
         st.count = 0;
         st.lower_hp_basis = 280;
-        st.period_basis = 10.5;
+        st.period_basis = 9.5;
+        st.genome_modifier = this.get_genome_modifier(Math.random()*1.5 + 0.5, 100); // [TEST]
 
         st = this.spawn.spirit_class_state["Spirit_Squid"];
         st.lower_chain = ["Spirit_Plankton", "Spirit_Fish", "Spirit_Jelly"];
@@ -280,6 +287,7 @@ export class SpawnScheduler {
         st.count = 0;
         st.lower_hp_basis = 1000;
         st.period_basis = 17.0;
+        st.genome_modifier = this.get_genome_modifier(Math.random()*1.5 + 0.5, 100); // [TEST]
         
         st = this.spawn.spirit_class_state["Spirit_Shark"];
         st.lower_chain = ["Spirit_Fish", "Spirit_Squid"];
@@ -289,6 +297,7 @@ export class SpawnScheduler {
         st.count = 0;
         st.lower_hp_basis = 1000;
         st.period_basis = 31.9;
+        st.genome_modifier = this.get_genome_modifier(1.0, 0);
 
         st = this.spawn.spirit_class_state["Spirit_Whale"];
         st.lower_chain = ["Spirit_Plankton"];
@@ -298,6 +307,7 @@ export class SpawnScheduler {
         st.count = 0;
         st.lower_hp_basis = 500;
         st.period_basis = 89.0;
+        st.genome_modifier = this.get_genome_modifier(1.0, 0);
     }
 
     count_class(class_name) {
@@ -346,9 +356,138 @@ export class SpawnScheduler {
             this.performance_counter = 0;
 
             this.dumpSceneProperties(this.scene);
+            // this.dumpObservers(this.scene);
             // this.dumpObjects(this.scene);
             // this.dumpMaterials(this.scene);
             // this.dumpTextures(this.scene);
+        }
+    }
+
+    cause_mutation(cls){
+        // 感染数、餓死数、被食数、個体数からなる
+        // 脅威（淘汰圧）に応じて（判定時の個体数が少ないほど淘汰圧は大きい）
+        // genome_modifier を一部乱数的に変更し
+        // ウィルス感染数をリセットし
+        // 世代番号を一つ増やす
+        let isMutating = false;
+
+        const st = this.state[cls];
+        // console.log("[MUTATION]:",cls,"(",st.generation,") num:",num," infected:", st.num_infected, " starved:", st.num_starved, " preyed:", st.num_preyed);
+
+        const { sum: sum1, count: num } = GameState.spirits.reduce(
+            (acc, s) => {
+                if (s.class_name === cls) {
+                    acc.sum += s.genome.speed;
+                    acc.count++;
+                }
+            return acc;
+        }, { sum: 0, count: 0 });
+        if (num === 0) return;  // 対象精霊がいない場合は、今回の変異判定をスキップ
+        const avg_speed_self = num > 0 ? sum1 / num : 0; // 自クラスの平均速度
+        // console.log(`cause_mutation ${cls} sum1 : ${sum1}  count1 : ${count1} avg_speed_self : ${avg_speed_self}`);
+
+        // 突然変異の判定・処理 [TEST]
+        if (st.num_starved >= 7 && num < 3){ // ◆餓死パターン (>=7)
+            const { sum: sum2, count: count2 } = GameState.spirits.reduce(
+                (acc, s) => {
+                    if (st.lower_chain.includes(s.class_name)) {
+                        acc.sum += s.genome.speed;
+                        acc.count++;
+                    }
+                return acc;
+            }, { sum: 0, count: 0 });
+            if (count2 === 0) return; // 下位精霊がいない場合は、今回の変異判定をスキップ
+            const avg_speed_lower = count2 > 0 ? sum2 / count2 : 0; // 捕食対象の平均速度
+            const spd = avg_speed_self > 0 ? avg_speed_lower / avg_speed_self : 0;
+            console.log(`[MUTAT] ${cls} avg_speed_lower : ${avg_speed_lower} avg_speed_self : ${avg_speed_self}`);
+            st.genome_modifier = this.get_genome_modifier(spd, st.num_infected);
+            isMutating = true;
+        } else if (st.num_preyed >= 150 && num < 3){ // ◆被捕食パターン (>=150)
+            const { sum: sum2, count: count2 } = GameState.spirits.reduce(
+                (acc, s) => {
+                    if (st.upper_chain.includes(s.class_name)) {
+                        acc.sum += s.genome.speed;
+                        acc.count++;
+                    }
+                return acc;
+            }, { sum: 0, count: 0 });
+            if (count2 === 0) return; // 上位精霊がいない場合は、今回の変異判定をスキップ
+            const avg_speed_upper = count2 > 0 ? sum2 / count2 : 0; // 攻撃者の平均速度
+            const spd = avg_speed_self > 0 ? avg_speed_upper / avg_speed_self : 0;
+            console.log(`[MUTAT] ${cls} avg_speed_upper : ${avg_speed_upper} avg_speed_self : ${avg_speed_self}`);
+            st.genome_modifier = this.get_genome_modifier(spd, st.num_infected);
+            isMutating = true;
+        } else if (st.num_preyed > 820 ){  // ◆一方的に被捕食（プランクトン／魚想定）
+            console.log(`[MUTAT] ${cls} preyed : ${st.num_preyed}`);
+            st.genome_modifier = this.get_genome_modifier(0.0, st.num_infected); //最防御タイプ
+            isMutating = true;
+        }
+
+        if (isMutating){
+            st.generation += 1;
+
+            // 突然変異の予告メッセージ
+            const texts = [`${cls} (${st.generation}) mutation are in progress.`];
+            const color = "#ff8020";
+            GameState.ui_manager.add_scroll_messages(texts, color);
+
+            // [TEST] LOG
+            const time = Math.floor(GameState.elapsed_time / 1000);
+            const log = `[MUTAT] ${cls}(${st.generation}) num:${num} inf:${st.num_infected} stv:${st.num_starved} pry:${st.num_preyed}`;
+            console.log(time,":", log);
+
+            // プールから古い世代のキャラクターを削除
+            const num_removed = this.spawn.clean_pool(cls, st.generation);
+            // console.log("pool removed:", num_removed);
+
+            // 突然変異判定変数のリセット
+            st.num_infected= 0;
+            st.num_starved=0;
+            st.num_preyed=0;
+        }
+    }
+
+    get_genome_modifier(ratio, random){
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+        const r = (Math.random() - 0.5) * (random / 100);  // (-0.5 ～ +0.5) に 感染数/100 を掛けて突然変異度向上
+        const s = clamp(ratio + r, 0.5, 2.0) ; //0.5～2.0（スピード）
+        const d = (1/s - 1.0) * 0.4 + 1.0; ; //1.4～0.6 （大きさ）
+        // console.log(`[MUTAT] ratio:${ratio}, random:${r}, speed:${s}, disp_scale:${d}`);
+        return { speed : s, rotate_speed : s, disp_scale : d, hp_max : d, collision_radius : d, predation_radius : d, mass : d};
+    }
+
+    regulate_ecosystem(cls){
+        // 捕食する側（食物連鎖の下位）を調べ
+        // 潤沢なら定期生成間隔を短くし
+        // 貧弱なら定期生成間隔を長くする
+        const st = this.state[cls];
+        if (st.lower_hp_basis === 0) return;  // 下位がいない
+
+        const sum_hp_lower = GameState.spirits.reduce(
+            (sum, s) => st.lower_chain.includes(s.class_name) ? sum + s.genome.hp_max : sum,
+            0
+        );
+        const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+        const ratio = clamp((sum_hp_lower / st.lower_hp_basis), 0.5, 2.0);
+        // console.log("[ECO]:", cls, sum_hp_lower, st.lower_hp_basis, ratio);
+
+        if (st.period === 0){
+            if (ratio > 1.0){
+                // 初めて、捕食対象のHP合計が、基準値を突破
+                st.period = st.period_basis / ratio;
+                // 新しい種族の登場予告メッセージ
+                const texts = [`${cls} will appear in ${Math.floor(st.period)} seconds`];
+                const color = "#09e0ff";
+                GameState.ui_manager.add_scroll_messages(texts, color);
+
+                // [TEST] LOG
+                const time = Math.floor(GameState.elapsed_time / 1000);
+                const log = `[ECOSYS] ${cls} - ${sum_hp_lower} / ${st.lower_hp_basis}`;
+                console.log(time,":", log);
+            }
+        } else {
+            // console.log("[ECO] ", cls, " sufficiency:", Math.floor(ratio * 100));
+            st.period = st.period_basis / ratio;
         }
     }
 
@@ -373,7 +512,9 @@ export class SpawnScheduler {
             "geometries:", this.scene.geometries.length,
             "transformNodes:", this.scene.transformNodes.length
         );
-        /*
+    }
+
+    dumpObservers(scene){
         const observables = [
             "onBeforeRenderObservable",
             "onAfterRenderObservable",
@@ -397,7 +538,6 @@ export class SpawnScheduler {
                 console.log(key + ":", obs.observers.length);
             }
         }
-        */
     }
 
     dumpTextures(scene) {
@@ -444,93 +584,6 @@ export class SpawnScheduler {
                             "mesh:", m.getBindedMeshes().map(x => x.name),
                             "texture.url:", m.albedoTexture?.url || m.albedoTexture?.name);
             });
-    }
-
-    dumpObservers(scene) {
-
-    }
-
-    cause_mutation(cls){
-        // 感染数、餓死数、被食数、個体数からなる
-        // 脅威（淘汰圧）に応じて（判定時の個体数が少ないほど淘汰圧は大きい）
-        // genome_modifier を一部乱数的に変更し
-        // ウィルス感染数をリセットし
-        // 世代番号を一つ増やす
-        let isMutating = false;
-
-        const st = this.state[cls];
-        const num = this.count_class(cls);
-
-        // console.log("[MUTATION]:",cls,"(",st.generation,") num:",num," infected:", st.num_infected, " starved:", st.num_starved, " preyed:", st.num_preyed);
-
-        // 突然変異の判定・処理 [TEST]
-        if ((st.num_starved > 7 && num < 3) ||    // 餓死パターン
-            (st.num_preyed > 150 && num < 3) ||    // 捕食されるパターン A
-            (st.num_infecter > 100 && num < 2)){  // ウィルス感染パターン
-            st.genome_modifier = {speed : 2.0, accel : 2.0, predation_radius : 2.0}; 
-            isMutating = true;
-        } else if (st.num_preyed > 915 ){       // 捕食されるパターン B
-            st.genome_modifier = {hp_max : 2.0};
-            isMutating = true;
-        }
-
-        if (isMutating){
-            st.generation += 1;
-
-            // 突然変異の予告メッセージ
-            const texts = [`${cls} (${st.generation}) mutation are in progress.`];
-            const color = "#ff8020";
-            GameState.ui_manager.add_scroll_messages(texts, color);
-
-            // [TEST] LOG
-            const time = Math.floor(GameState.elapsed_time / 1000);
-            const log = `[MUTAT] ${cls}(${st.generation}) num:${num} inf:${st.num_infected} stv:${st.num_starved} pry:${st.num_preyed}`;
-            console.log(time,":", log);
-
-            // プールから古い世代のキャラクターを削除する
-            const num_removed = this.spawn.clean_pool(cls, st.generation);
-            // console.log("pool removed:", num_removed);
-
-            // 突然変異判定変数のリセット
-            st.num_infected= 0;
-            st.num_starved=0;
-            st.num_preyed=0;
-        }
-    }
-
-    regulate_ecosystem(cls){
-        // 捕食する側（食物連鎖の下位）を調べ
-        // 潤沢なら定期生成間隔を短くし
-        // 貧弱なら定期生成間隔を長くする
-        const st = this.state[cls];
-        if (st.lower_hp_basis === 0) return;  // 下位がいない
-
-        const sum_hp_lower = GameState.spirits.reduce(
-            (sum, s) => st.lower_chain.includes(s.class_name) ? sum + s.genome.hp_max : sum,
-            0
-        );
-        const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-        const ratio = clamp((sum_hp_lower / st.lower_hp_basis), 0.5, 2.0);
-        // console.log("[ECO]:", cls, sum_hp_lower, st.lower_hp_basis, ratio);
-
-        if (st.period === 0){
-            if (ratio > 1.0){
-                // 初めて、捕食対象のHP合計が、基準値を突破
-                st.period = st.period_basis / ratio;
-                // 新しい種族の登場予告メッセージ
-                const texts = [`${cls} will appear in ${Math.floor(st.period)} seconds`];
-                const color = "#09e0ff";
-                GameState.ui_manager.add_scroll_messages(texts, color);
-
-                // [TEST] LOG
-                const time = Math.floor(GameState.elapsed_time / 1000);
-                const log = `[ECOSYS] ${cls} - ${sum_hp_lower} / ${st.lower_hp_basis}`;
-                console.log(time,":", log);
-            }
-        } else {
-            // console.log("[ECO] ", cls, " sufficiency:", Math.floor(ratio * 100));
-            st.period = st.period_basis / ratio;
-        }
     }
 
     dispose(){

@@ -135,15 +135,6 @@ export class Attachment_Mouth extends Attachment{
 
         // マテリアルの設定
         sphere.material = this.spirit.shared_materials.get(lip_material_key);
-
-        /*
-        const mat = new BABYLON.PBRMaterial("lipMat", this.scene);
-        mat.albedoColor = color;
-        mat.metallic = 0.2;
-        mat.roughness = 1.0;
-        mat.alpha = alpha;
-        sphere.material = mat;
-        */
         
         sphere.parent = root;
         this.nodes.push(sphere);
@@ -171,14 +162,6 @@ export class Attachment_Mouth extends Attachment{
         mesh.position = p;
 
         mesh.material = this.spirit.shared_materials.get(tooth_material_key);
-        /*
-        const mat = new BABYLON.PBRMaterial("toothMat", this.scene);
-        mat.albedoColor = new BABYLON.Color3(1.0, 1.0, 1.0);
-        mat.metallic = 0.2;
-        mat.roughness = 1.0;
-        mat.alpha = alpha;
-        mesh.material = mat;
-        */
 
         this.nodes.push(mesh);
         return mesh;
@@ -207,7 +190,7 @@ export class Attachment_Mouth extends Attachment{
 
     update(time, delta){
 
-        const minAngleDeg=22, maxAngleDeg=39;
+        const minAngleDeg=15, maxAngleDeg=28;
         let angleDeg = (maxAngleDeg - minAngleDeg) * Math.sin(time * this.biteSpeed / 200) + ((minAngleDeg + maxAngleDeg) / 2) 
         this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, +angleDeg);
         this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, -angleDeg);

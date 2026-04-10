@@ -29,7 +29,6 @@ export class Collidable extends Drawable {
         this.environment_velocity = new BABYLON.Vector3();
         this.velocity = new BABYLON.Vector3();
 
-        this.max_speed = 0.1;
         this.rotate_speed = 1.0;
 
         this.last_direction = new BABYLON.Vector3();

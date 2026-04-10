@@ -10,6 +10,8 @@ export class Effect_Feeding extends Effect {
         super(scene, class_name);
         this.ps = null;
         this.size_ratio = 0.5;
+        this.activated_time = 0;
+        this.min_life_time = 1.6; 
 
         this.create();
     }
@@ -65,6 +67,7 @@ export class Effect_Feeding extends Effect {
         this.ps.emitter = this.root;
 
         this.ps.manualEmitCount = MANUAL_EMIT_COUNT; //(再)発火
+        this.activated_time = 0;
 
         super.activate(pos, params);
     }
@@ -75,7 +78,8 @@ export class Effect_Feeding extends Effect {
 
 
     update(time, delta){
-        if (this.ps.getActiveCount() === 0){
+        this.activated_time += delta / 1000;
+        if (this.activated_time > this.min_life_time && this.ps.getActiveCount() === 0){
             this.alive = false;
         }
         super.update(time, delta);

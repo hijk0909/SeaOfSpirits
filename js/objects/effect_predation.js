@@ -16,17 +16,20 @@ export class Effect_Predation extends Effect {
         this.core_life = 1.0;
         this.core_emissiveColor = new BABYLON.Color3(1.0, 0.7, 0.4);
 
+        this.tmp_emissiveColor = new BABYLON.Color3();
+
         this.create();
     }
 
     create(){
         this.particleTexture = GameState.asset.texture.particle;
 
+        const uid = Math.floor(Math.random()*1000);
         // 爆心（コア）
-        this.core_mesh = BABYLON.MeshBuilder.CreateSphere("explosionCore", { diameter: 1.2, }, this.scene);
+        this.core_mesh = BABYLON.MeshBuilder.CreateSphere(`explosionCore-${uid}`, { diameter: 1.2, }, this.scene);
 
-        const mat = new BABYLON.PBRMaterial("coreMat", this.scene);
-        mat.emissiveColor = this.core_emissiveColor;
+        const mat = new BABYLON.PBRMaterial(`explosionCoreMaterial-${uid}`, this.scene);
+        mat.emissiveColor.copyFrom(this.core_emissiveColor);
         mat.alpha = 0.7;
         mat.disableLighting = true;
         this.core_mesh.material = mat;
@@ -77,6 +80,7 @@ export class Effect_Predation extends Effect {
         this.core_time = 0.0;
         this.core_mesh.setEnabled(true);
         this.core_mesh.position.copyFrom(pos);
+        // console.log(`[ACTIVATE] mesh : ${this.core_mesh.name} mat: ${this.core_mesh.material.name}`);
 
         this.root.position.copyFrom(pos);
         this.root.scaling.set(this.size_ratio, this.size_ratio, this.size_ratio);
@@ -88,6 +92,7 @@ export class Effect_Predation extends Effect {
     }
     
     deactivate(){
+        // console.log(`[DEACTIVATE] mesh : ${this.core_mesh.name} mat: ${this.core_mesh.material.name}`);
         this.core_mesh.setEnabled(false);
         super.deactivate();
     }
@@ -101,6 +106,7 @@ export class Effect_Predation extends Effect {
         if (!this.core_mesh) return;
         this.core_time += delta / 1000;
         const t = this.core_time / this.core_life;
+
         if (t >= 1.0) {
             this.core_mesh.setEnabled(false);
             return;
@@ -117,16 +123,18 @@ export class Effect_Predation extends Effect {
             const tt = (t - 0.4) / 0.6;
             scale = BABYLON.Scalar.Lerp(1.1 * this.size_ratio, 0.0, this.ease_out(tt));
         }
+        scale = Math.max(scale, 0.001); // 念のため 0 に させない
         this.core_mesh.scaling.set(scale, scale, scale);
-        this.core_mesh.material.alpha = BABYLON.Scalar.Lerp(0.8, 0.0, e);
+        this.core_mesh.material.alpha = BABYLON.Scalar.Lerp(0.8, 0.001, e); // 念のため 0に させない
 
         const intensity = BABYLON.Scalar.Lerp(3.5, 1.0, e);
-        this.core_mesh.material.emissiveColor = this.core_emissiveColor.scale(intensity);
+        this.core_emissiveColor.scaleToRef(intensity, this.tmp_emissiveColor);
+        this.core_mesh.material.emissiveColor.copyFrom(this.tmp_emissiveColor);
     }
 
     update(time, delta){
         this.update_core(delta);
-        if (this.ps.getActiveCount() === 0){
+        if (this.core_time > this.core_life && this.ps.getActiveCount() === 0){
             this.alive = false;
         }
         super.update(time, delta);

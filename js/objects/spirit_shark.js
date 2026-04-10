@@ -2,6 +2,7 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 // サメ
 export class Spirit_Shark extends Spirit {
@@ -33,7 +34,6 @@ export class Spirit_Shark extends Spirit {
         this.base_color = new BABYLON.Color3();
         this.texture_color_1 = new BABYLON.Color3();
         this.texture_color_2 = new BABYLON.Color3();
-        this.eye_emissive = new BABYLON.Color3();
 
         // テンポラリ変数
         this.tmp_target = new BABYLON.Vector3();
@@ -45,18 +45,12 @@ export class Spirit_Shark extends Spirit {
     }
 
     create(genome_modifier){
-        const speed_ratio = genome_modifier?.speed ?? 1.0;
-        if (speed_ratio > 1.0){
-            this.base_color.copyFromFloats(1.0, 0.0, 0.0);
-            this.texture_color_1.copyFromFloats(1.0, 0.3, 0.0);
-            this.texture_color_2.copyFromFloats(0.6, 1.0, 0.2);
-        } else {
-            this.base_color.copyFromFloats(0.0, 1.0, 1.0);
-            this.texture_color_1.copyFromFloats(0.30, 0.80, 1.00);
-            this.texture_color_2.copyFromFloats(0.01, 0.03, 0.01);
-        }
+        this.base_color.copyFromFloats(0.5, 0.7, 1.0);
 
-        this.eye_emissive.copyFromFloats(6.0, 0.0, 0.0);
+        const speed_ratio = genome_modifier?.speed ?? 1.0;
+        this.texture_color_1.copyFrom(MyDraw.saturatedColor(speed_ratio));
+        this.texture_color_2.copyFromFloats(0.2, 0.2, 0.2);
+        // console.log("SHARK speed_ratio:", genome_modifier.speed, speed_ratio);
 
         super.create(genome_modifier);
     }
