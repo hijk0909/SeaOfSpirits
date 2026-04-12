@@ -54,6 +54,8 @@ export class Spirit extends Collidable {
         this.flash_time = 0;
         this.base_alpha = 1.0;
 
+        this.remain_color = new BABYLON.Color3(1.0, 1.0, 1.0);
+
         this.shared_materials = new Map(); // 共有マテリアル
 
         this.prev_LOD = false; //1フレーム前のLOD
@@ -493,6 +495,7 @@ export class Spirit extends Collidable {
                 GameState.spawn.spirit_class_state[this.class_name].num_starved += 1;
                 // console.log("starvation:", this.class_name);
                 GameState.spawn.activate_effect("Effect_Extinction", this.root.position, { size : this.collisionRadius});
+                GameState.remains.add_remain(this.root.position, this.remain_color, this.collisionRadius);
                 GameState.asset.se.extinction.play_3D(this.root.position);
             }
 

@@ -73,6 +73,8 @@ export class Spirit_Squid extends Spirit {
         this.shared_materials.set("tentacle", mat);
 
         mat = null;
+
+        this.remain_color.copyFrom(this.tentacle_color);
     }
 
     _create_body(){

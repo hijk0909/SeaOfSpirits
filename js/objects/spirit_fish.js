@@ -82,6 +82,8 @@ export class Spirit_Fish extends Spirit {
         this.shared_materials.set("tail", mat);
 
         mat = null;
+
+        this.remain_color.copyFrom(this.base_color);
     }
 
     _create_body(){
@@ -116,7 +118,7 @@ export class Spirit_Fish extends Spirit {
 
         let def;
 
-        const tentacle_length = 0.25 * this.genome_modifier.speed;
+        const tentacle_length = 0.20 * this.genome_modifier.speed;
         def = {
             name: "Attachment_Tentacle",
             socket: {front:-0.1, thetaDeg:90, phiDeg:0},

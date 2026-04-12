@@ -36,6 +36,12 @@ export class TitleScene extends Scene {
         // await document.fonts.load('12px "MyGameFont"');
         // await document.fonts.ready;
         // console.log("Font loaded!");
+
+        this.button = BABYLON.GUI.Button.CreateImageOnlyButton("start button", "./assets/textures/btn_tap.png");
+        this.button.width = "120px";
+        this.button.height = "49px";
+        this.button.color = "transparent";
+        this.button.thickness = 0;
     }
 
     create(){
@@ -72,6 +78,12 @@ export class TitleScene extends Scene {
           this.panel_title.isVisible = true;
         });
         this.panel_title.addControl(this.image);
+
+        // Button
+        this.panel_title.addControl(this.button);
+        this.button.onPointerUpObservable.add(() => {
+            this.start_game();            
+        });
 
         // Text
         this.text1 = new BABYLON.GUI.TextBlock();
@@ -175,6 +187,10 @@ export class TitleScene extends Scene {
         if (this.image){
             this.image.dispose();
             this.image = null;
+        }
+        if (this.button){
+            this.button.dispose();
+            this.button = null;
         }
         if (this.my_input){
             this.my_input.dispose();

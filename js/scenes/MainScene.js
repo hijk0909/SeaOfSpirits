@@ -23,25 +23,30 @@ export class MainScene extends Scene {
         GameState.stage_state = GLOBALS.STAGE_STATE.START;
 
         this.sunLight_colors = [
-            {t:0.00, r:0.6, g:0.0, b:0.0, i: 5.0},
+            {t:0.00, r:0.2, g:0.3, b:0.4, i: 5.0},
             {t:0.25, r:0.5, g:0.8, b:1.0, i:10.0},
-            {t:0.50, r:1.0, g:0.0, b:0.2, i: 1.0},
-            {t:0.58, r:0.0, g:0.0, b:1.0, i: 0.2},
-            {t:0.75, r:0.0, g:0.0, b:0.6, i: 0.1},
-            {t:0.90, r:0.0, g:0.0, b:0.5, i: 1.0},
-            {t:0.97, r:1.0, g:0.0, b:0.1, i: 2.0},
-            {t:1.00, r:0.6, g:0.0, b:0.0, i: 5.0}
+            {t:0.50, r:0.3, g:0.4, b:0.5, i: 5.0},
+            {t:0.55, r:0.3, g:0.2, b:0.2, i: 3.0},
+            {t:0.60, r:0.8, g:0.3, b:0.2, i: 2.0},
+            {t:0.65, r:0.0, g:0.0, b:0.3, i: 1.0},
+            {t:0.75, r:0.0, g:0.0, b:0.8, i: 1.0},
+            {t:0.85, r:0.5, g:0.0, b:0.2, i: 1.5},
+            {t:0.90, r:0.9, g:0.3, b:0.2, i: 2.5},
+            {t:0.95, r:0.6, g:0.2, b:0.2, i: 3.0},
+            {t:1.00, r:0.2, g:0.3, b:0.4, i: 5.0}
         ]
         this.background_colors = [
-            {t:0.00, r:0.20, g:0.00, b:0.00, i:0.0},
-            {t:0.05, r:0.02, g:0.06, b:0.30, i:0.0},
-            {t:0.25, r:0.01, g:0.10, b:0.50, i:0.0},
-            {t:0.40, r:0.02, g:0.08, b:0.30, i:0.0},
-            {t:0.50, r:0.30, g:0.02, b:0.10, i:0.0},
-            {t:0.55, r:0.00, g:0.00, b:0.15, i:0.0},
-            {t:0.75, r:0.00, g:0.00, b:0.10, i:0.0},
-            {t:0.95, r:0.00, g:0.00, b:0.05, i:0.0},
-            {t:1.00, r:0.20, g:0.00, b:0.00, i:0.0}
+            {t:0.00, r:0.0, g:0.2, b:0.6, i: 0.0},
+            {t:0.25, r:0.0, g:0.5, b:1.0, i: 0.0},
+            {t:0.50, r:0.0, g:0.3, b:0.6, i: 0.0},
+            {t:0.55, r:0.1, g:0.2, b:0.4, i: 0.0},
+            {t:0.60, r:0.4, g:0.1, b:0.2, i: 0.0},
+            {t:0.65, r:0.0, g:0.0, b:0.2, i: 0.0},
+            {t:0.75, r:0.0, g:0.0, b:0.0, i: 0.0},
+            {t:0.85, r:0.0, g:0.0, b:0.2, i: 0.0},
+            {t:0.90, r:0.4, g:0.1, b:0.2, i: 0.0},
+            {t:0.95, r:0.1, g:0.2, b:0.5, i: 0.0},
+            {t:1.00, r:0.0, g:0.2, b:0.6, i: 0.0}
         ]
     }
 
@@ -165,7 +170,7 @@ export class MainScene extends Scene {
 
             for (let i = 0; i < positions.length; i += 3) {
                 // Y座標（i+1）を ランダム値に
-                positions[i + 1] = -10 - Math.random() * 2.0;
+                positions[i + 1] = GLOBALS.GROUND.Y - Math.random() * GLOBALS.GROUND.UPDOWN;
             }
 
             ground.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
@@ -367,6 +372,16 @@ export class MainScene extends Scene {
         if (GameState.asset){
             GameState.asset.dispose();
             GameState.asset = null;
+        }
+
+        if (this.exec){
+            this.exec.dispose();
+            this.exec = null;
+        }
+
+        if (this.wipe){
+            this.wipe.dispose();
+            this.wipe = null;
         }
 
         if (this.my_input){

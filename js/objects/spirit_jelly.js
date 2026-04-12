@@ -56,6 +56,8 @@ export class Spirit_Jelly extends Spirit {
         this.shared_materials.set("spine", mat);
 
         mat = null;
+
+        this.remain_color.copyFrom(this.texture_color_1);
     }
 
     _create_body(){

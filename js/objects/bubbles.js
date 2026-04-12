@@ -7,6 +7,7 @@ const MAX_BUBBLES = 1000;
 const ZERO_SCALE = new BABYLON.Vector3(0, 0, 0);
 const DEFAULT_SCALE = new BABYLON.Vector3(1, 1, 1);
 const UPPER_LIMIT = 9.0;
+const UP_SPEED = 0.01;
 
 export class Bubbles extends Drawable {
     constructor(scene, cls) {
@@ -71,7 +72,7 @@ export class Bubbles extends Drawable {
 
             const offset = i * 16;
             this.tmp_position.x = this.matrixBuffer[offset + 12];
-            this.tmp_position.y = this.matrixBuffer[offset + 13] + 0.01;
+            this.tmp_position.y = this.matrixBuffer[offset + 13] + UP_SPEED; //上昇
             this.tmp_position.z = this.matrixBuffer[offset + 14];
 
             if (this.tmp_position.y < UPPER_LIMIT) {
@@ -83,5 +84,11 @@ export class Bubbles extends Drawable {
             }
         }
         this.bubble.thinInstanceBufferUpdated("matrix");
+    }
+    dispose(){
+        if (this.mesh){
+            this.mesh.dispose();
+            this.mesh = null;
+        }
     }
 }

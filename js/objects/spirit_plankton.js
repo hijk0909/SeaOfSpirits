@@ -24,6 +24,7 @@ export class Spirit_Plankton extends Spirit {
     }
 
     create(genome_modifier){
+
         if (this.generation === 0){
             this.base_color.copyFromFloats(0.0, 1.0, 0.0);
             this.num_spines = 13;
@@ -32,6 +33,9 @@ export class Spirit_Plankton extends Spirit {
             this.num_spines = 19;
         }
         super.create(genome_modifier);
+
+        // プランクトンは動かない。比較基準として 0.05 固定。
+        this.genome.speed = 0.05;
     }
 
     _set_shared_materials(){
@@ -45,6 +49,8 @@ export class Spirit_Plankton extends Spirit {
         this.shared_materials.set("spine", mat);
 
         mat = null;
+
+        this.remain_color.copyFrom(this.base_color);
     }
 
     _create_body(){

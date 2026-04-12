@@ -42,6 +42,10 @@ export class Spirit_Virus extends Spirit {
         super.create(genome_modifier);
     }
 
+    _set_shared_materials(){
+        this.remain_color.copyFrom(INFECTING_ALBEDO);
+    }
+
     _create_body(){
         const phi = (1 + Math.sqrt(5)) / 2;
         const a = 1.0, b = 1.0 / phi;

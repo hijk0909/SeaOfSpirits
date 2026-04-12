@@ -63,6 +63,13 @@ export class Wipe {
             }
         });
     }
+
+    dispose(){
+        if (this.postProcess){
+            this.postProcess.dispose();
+            this.postProcess = null;
+        }
+    }
 }
 
 const TYPE_INTERVAL = 40; // ms / 1文字

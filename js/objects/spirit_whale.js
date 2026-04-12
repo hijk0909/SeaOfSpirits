@@ -61,6 +61,8 @@ export class Spirit_Whale extends Spirit {
         this.shared_materials.set("parts", mat);
 
         mat = null;
+
+        this.remain_color.copyFrom(this.base_color);
     }
 
     _create_body(){

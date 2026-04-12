@@ -88,6 +88,8 @@ export class Spirit_Shark extends Spirit {
         this.shared_materials.set("parts", mat);
 
         mat = null;
+
+        this.remain_color.copyFrom(this.texture_color_1);
     }
 
     _create_body(){

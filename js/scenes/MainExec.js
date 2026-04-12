@@ -3,12 +3,14 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from '../GameState.js';
 import { Player } from '../objects/player.js';
 import { Bubbles } from '../objects/bubbles.js';
+import { Remains } from '../objects/remains.js';
 
 export class Exec {
     constructor(scene) {
         this.scene = scene;
         GameState.player = new Player(this.scene, "Player");
         GameState.bubbles = new Bubbles(this.scene, "Bubbles");
+        GameState.remains = new Remains(this.scene, "Remains");
 
         // 距離計算用のテンポラリVector3
         this.tmpDiff    = new BABYLON.Vector3();
@@ -25,6 +27,9 @@ export class Exec {
 
         // ◆泡移動
         GameState.bubbles.update(time, delta);
+
+        // ◆遺物移動
+        GameState.remains.update(time, delta);
 
         // ◆精霊の管理
         for (let i = GameState.spirits.length - 1; i >= 0; i--) {
@@ -75,6 +80,7 @@ export class Exec {
 
                     // [TEST]
                     GameState.bubbles.add_bubble(obj2.root.position);
+                    GameState.remains.add_remain(obj2.root.position, obj2.remain_color, obj2.collisionRadius);
                 }
             }
         }
@@ -92,6 +98,21 @@ export class Exec {
         }
 
     } // End of update
+
+    dispose(){
+        if ( GameState.player ){
+            GameState.player.dispose();
+            GameState.player = null;
+        }
+        if ( GameState.bubbles ){
+            GameState.bubbles.dispose();
+            GameState.bubbles = null;
+        }
+        if ( GameState.remains ){
+            GameState.remains.dispose();
+            GameState.remains = null;
+        }
+    }
 
     // 捕食位置の当たり判定
     check_predation(predator, prey){
