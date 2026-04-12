@@ -162,10 +162,11 @@ export class Collidable extends Drawable {
             }
 
             this.velocity.copyFrom(this.control_velocity);
-            // this.velocity.scaleInPlace(control_ratio);
             this.velocity.addInPlace(this.external_velocity);
-            // this.velocity.addInPlace(this.repulse_velocity);
             this.velocity.addInPlace(this.environment_velocity);
+
+            // 重なりは位置の直接更新で解消（moveWithCollisions は使わないので）
+            // this.velocity.addInPlace(this.repulse_velocity);
 
             // FPS補正
             this.velocity.scaleInPlace(Math.min(delta, GLOBALS.DELTA_CLAMP) / GLOBALS.DELTA);

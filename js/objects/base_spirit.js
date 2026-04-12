@@ -10,7 +10,7 @@ import { Attachment_Mouth} from "./attachment_mouth.js";
 import { Attachment_Fin} from "./attachment_fin.js";
 
 const FLASH_TIME = 0.15; //秒
-const FALSH_INTENSITY = 0.3;
+const FALSH_INTENSITY = 0.15;
 const LOD_THRESHOLD = 12.0;
 
 export class Spirit extends Collidable {

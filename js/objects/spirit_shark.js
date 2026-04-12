@@ -15,9 +15,9 @@ export class Spirit_Shark extends Spirit {
         this.genome.is_collidable = true;
         this.genome.mass = 2.5;
         this.genome.hp_max = 300;
-        this.genome.hp_decrease = 0.13;
+        this.genome.hp_decrease = 0.102;
         this.genome.rotate_speed = 1.6;
-        this.genome.speed = 0.11;
+        this.genome.speed = 0.115;
         this.genome.accel = 0.0012;
         this.genome.predation_classes = ["Spirit_Fish", "Spirit_Squid"];
         this.genome.predation_socket = {front : 0.0, theta : -5.0 , phi : 0.0};
@@ -25,11 +25,11 @@ export class Spirit_Shark extends Spirit {
 
         // クラス固有のパラメータ
         this.target = null;
-        this.visibleRadius = 15.0;
-        this.slowRadius = 2.5;
-        this.arrivalRadius = 0.2;
+        this.visibleRadius = 18.0;  //視野半径
+        this.slowRadius = 2.5;      //接近時減速半径
+        this.arrivalRadius = 0.2;   //到着判定半径
         this.minSpeedRatio = 0.03;
-        this.chasePeriod = 5.0;
+        this.chasePeriod = 3.0 * (0.4 + Math.random() * 1.2); //個体による「ゆらぎ」
         this.chaseTimer = this.chasePeriod;
         this.base_color = new BABYLON.Color3();
         this.texture_color_1 = new BABYLON.Color3();
@@ -171,18 +171,51 @@ export class Spirit_Shark extends Spirit {
     update(time, delta){
 
         if ( !this.target || !this.target.alive){
-            let minDistSq = this.visibleRadius * this.visibleRadius;
-            for (let spirit of GameState.spirits){
-                if (this.genome.predation_classes.includes(spirit.class_name)){
-                    let distSq = BABYLON.Vector3.DistanceSquared(spirit.root.position, this.root.position);
-                    if (distSq < minDistSq){
-                        minDistSq = distSq;
-                        this.target = spirit;
-                    }
+            const radiusSq = this.visibleRadius * this.visibleRadius;
+
+            // 視界内の獲物を抽出し、近い順にソートして上位3つを確保 
+            const preyCandidates = GameState.spirits
+                .filter(spirit => 
+                    spirit.alive && !spirit.dying &&
+                    this.genome.predation_classes.includes(spirit.class_name)
+                )
+                .map(spirit => ({
+                    spirit,
+                    distSq: BABYLON.Vector3.DistanceSquared(spirit.root.position, this.root.position)
+                }))
+                .filter(item => item.distSq < radiusSq) //視野内に絞り込む
+                .sort((a, b) => a.distSq - b.distSq)
+                .slice(0, 5); // 近い5つに絞り込む
+
+            if (preyCandidates.length > 0) {
+                // 視界内の自分以外の仲間を抽出 
+                const friends = GameState.spirits.filter(spirit => 
+                    spirit !== this &&  spirit.alive && spirit.class_name === this.class_name &&
+                    BABYLON.Vector3.DistanceSquared(spirit.root.position, this.root.position) < radiusSq
+                );
+
+                if (friends.length > 0) {
+                    // 仲間がいない場合は、最も近い獲物（0番目）で決定
+                    this.target = preyCandidates[0].spirit;
+                } else {
+                    // 仲間がいる場合は、仲間から最も遠い獲物を選択
+                    // 各獲物候補について「一番近い仲間との距離」を計算し、その距離が最大になる獲物を採用する
+                    this.target = preyCandidates.reduce((best, current) => {
+                        // 現在の候補(current)に対し、最も近い仲間との距離(minDistToFriendSq)を求める
+                        const minDistToFriendSq = Math.min(...friends.map(f => 
+                            BABYLON.Vector3.DistanceSquared(f.root.position, current.spirit.root.position)
+                        ));
+                        // 初回、または「最も近い仲間との距離」がより大きい候補が見つかれば更新
+                        if (!best || minDistToFriendSq > best.score) {
+                           return { spirit: current.spirit, score: minDistToFriendSq };
+                        }
+                        return best;
+                    }, null).spirit;
                 }
+                this.chaseTimer = this.chasePeriod;
             }
-            this.chaseTimer = this.chasePeriod;
         }
+
         if ( this.target && this.target.alive){
             this.tmp_target.copyFrom(this.target.root.position);
 
