@@ -8,6 +8,7 @@ const ZERO_POSITION = new BABYLON.Vector3(0, 0, 0);
 const ALPHA_START     = 0.2;
 const ALPHA_REMAINING = 0.1;
 
+const SCALE_FACTOR = 0.75;
 const DOWN_SPEED  = 0.001;
 const DEPTH_SPEED = 0.001;
 const ROTATE_SPEED = 0.002;
@@ -18,8 +19,8 @@ const ST_MOVE         = 2;
 const ST_REMAINING    = 3;
 const ST_DISAPPEARING = 4;
 
-const ST_APPEARING_COUNT        = 180;   // フレーム数（整数カウンタ）
-const ST_TRANSPARENT_COUNT      = 120;   // フレーム数（整数カウンタ）
+const ST_APPEARING_COUNT        = 60;   // フレーム数（整数カウンタ）
+const ST_TRANSPARENT_COUNT      = 60;   // フレーム数（整数カウンタ）
 const ST_REMAINING_PERIOD       = 900;  // 秒（delta/1000 で加算）
 const ST_DISAPPEARING_COUNT     = 60;  // フレーム数（整数カウンタ）
 
@@ -115,7 +116,7 @@ export class Remains extends Drawable {
 
         // stats を初期化
         const st = this.stats[index];
-        st.scale   = scale;
+        st.scale   = scale * SCALE_FACTOR;
         st.state   = ST_APPEARING;
         st.counter = 0;
         st.axis.set(0, 1, 0);  // axis はランダム（ST_MOVE 遷移時に改めて設定）
