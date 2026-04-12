@@ -209,12 +209,12 @@ export class SpawnScheduler {
             //GameState.spawn.activate_spirit("Spirit_Whale", pos, 0);
         }
 
-        for(let i=0; i<10; i++){
+        for(let i=0; i<0; i++){
             const pos = this.random_surface_position(5.0);
             GameState.spawn.activate_spirit("Spirit_Fish", pos, 0, this.get_genome_modifier(Math.random()*1.5 + 0.5, 100)); // [TEST]
         }
         
-        for(let i=0; i<3; i++){
+        for(let i=0; i<0; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Shark", pos, 0, this.get_genome_modifier(Math.random()*1.5 + 0.5, 100)); // [TEST]
             // GameState.spawn.activate_spirit("Spirit_Shark", pos, 0);

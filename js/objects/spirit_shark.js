@@ -29,7 +29,7 @@ export class Spirit_Shark extends Spirit {
         this.slowRadius = 2.5;      //接近時減速半径
         this.arrivalRadius = 0.2;   //到着判定半径
         this.minSpeedRatio = 0.03;
-        this.chasePeriod = 3.0 * (0.4 + Math.random() * 1.2); //個体による「ゆらぎ」
+        this.chasePeriod = 2.0 * (0.4 + Math.random() * 1.2); //追跡時間：個体による「ゆらぎ」
         this.chaseTimer = this.chasePeriod;
         this.base_color = new BABYLON.Color3();
         this.texture_color_1 = new BABYLON.Color3();
