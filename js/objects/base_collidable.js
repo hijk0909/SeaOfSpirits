@@ -49,6 +49,10 @@ export class Collidable extends Drawable {
 
     add_impulse(impulse){
         this.external_velocity.addInPlace(impulse.scale(1/this.mass * GLOBALS.COLLIDABLE.IMPULSE_VELOCITY_RATIO));
+        if (this.external_velocity.length() > GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY){
+            this.external_velocity.normalize();
+            this.external_velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY);
+        }
     }
 
     rotate_towards(targetPosition, delta){
@@ -155,11 +159,6 @@ export class Collidable extends Drawable {
     update(time, delta){
 
         if (!this.dying){
-            // 外部速度の制限
-            if (this.velocity.length() > GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY){
-                this.velocity.normalize();
-                this.velocity.scaleInPlace(GLOBALS.COLLIDABLE.MAX_EXTERNAL_VELOCITY);
-            }
 
             this.velocity.copyFrom(this.control_velocity);
             this.velocity.addInPlace(this.external_velocity);

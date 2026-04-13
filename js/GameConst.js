@@ -2,7 +2,7 @@
 
 export const GLOBALS = {
 
-    VERSION : "0.6c",
+    VERSION : "0.6d",
     DATE : "2026.4.13",
 
     DELTA : 16.6667,
@@ -29,9 +29,9 @@ export const GLOBALS = {
     },
 
     COLLIDABLE : {
-        IMPULSE_VELOCITY_RATIO : 3.0,
-        MAX_EXTERNAL_VELOCITY : 0.03,
-        EXTERNAL_VELOCITY_DAMPING : 0.87,
+        IMPULSE_VELOCITY_RATIO : 2.0,
+        MAX_EXTERNAL_VELOCITY : 1.2,
+        EXTERNAL_VELOCITY_DAMPING : 0.95,
         OVERLAP_RESOLUTION_RATIO : 0.8,
         OVERLAP_RESOLUTION_THRESHOLD : 0.1,
         MAX_REPULSE_VELOCITY : 0.6

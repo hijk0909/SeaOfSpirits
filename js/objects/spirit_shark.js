@@ -185,7 +185,7 @@ export class Spirit_Shark extends Spirit {
                 }))
                 .filter(item => item.distSq < radiusSq) //視野内に絞り込む
                 .sort((a, b) => a.distSq - b.distSq)
-                .slice(0, 5); // 近い5つに絞り込む
+                .slice(0, 5); // 自分に近い5つに絞り込む
 
             if (preyCandidates.length > 0) {
                 // 視界内の自分以外の仲間を抽出 
