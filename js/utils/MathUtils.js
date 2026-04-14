@@ -4,6 +4,16 @@ import { GameState } from '../GameState.js';
 
 export class MyMath {
 
+    static _viewMatrix = new BABYLON.Matrix();
+    static _projectionMatrix = new BABYLON.Matrix();
+    static _viewportHeight;
+    static _viewportWidth;
+    static _uiScale;
+
+    static tmp_screenPos = new BABYLON.Vector3();
+    static tmp_worldPosNear = new BABYLON.Vector3();
+    static tmp_worldPosFar = new BABYLON.Vector3();
+
     static rotate_to_front( theta, phi) {
         // 角度→ラジアン
         const radTheta1 = theta * Math.PI / 180;
@@ -62,43 +72,47 @@ export class MyMath {
         return screen_pos;
     }
 
-    static screen_to_world_at_ndc(screen_pos, ndc_z = 0) {
-        const rw = GameState.game.engine.getRenderWidth();
-        const rh = GameState.game.engine.getRenderHeight();
-        const scale = this.get_ui_scale();
-
-        // UI座標系 → ピクセル座標
-        const pixel_x = screen_pos.x * scale;
-        const pixel_y = screen_pos.y * scale;
-
-        // const transformMatrix = GameState.camera.getTransformationMatrix();
-        const viewport = GameState.camera.viewport.toGlobal(rw, rh);
-
-        const world_pos = BABYLON.Vector3.Unproject(
-            new BABYLON.Vector3(pixel_x, pixel_y, ndc_z),
-            rw,
-            rh,
-            BABYLON.Matrix.Identity(),
-            GameState.camera.getViewMatrix(),
-            GameState.camera.getProjectionMatrix(),
-            viewport
-        );
-
-        return world_pos;
+    static setScreenToWorldParameters() {
+        MyMath._viewMatrix = GameState.camera.getViewMatrix();
+        MyMath._projectionMatrix = GameState.camera.getProjectionMatrix();
+        MyMath._viewportWidth = GameState.game.engine.getRenderWidth();
+        MyMath._viewportHeight = GameState.game.engine.getRenderHeight();
+        MyMath._uiScale = MyMath.get_ui_scale();
     }
 
-    static screen_to_world_at_z(screen_pos, z=0){
-        const near = this.screen_to_world_at_ndc(screen_pos, 0);
-        const far  = this.screen_to_world_at_ndc(screen_pos, 1);
+    // （注）set_camera_matrix を事前に実行しておくこと
+    static screenToWorldAtNdcToRef(screen_pos, ndc_z = 0, world_pos) {
+        // UI座標系 → ピクセル座標
+        const pixel_x = screen_pos.x * MyMath._uiScale;
+        const pixel_y = screen_pos.y * MyMath._uiScale;
+
+        const tmp = MyMath.tmp_screenPos;
+        tmp.copyFromFloats(pixel_x, pixel_y, ndc_z);
+        BABYLON.Vector3.UnprojectToRef(
+            tmp,
+            MyMath._viewportWidth,
+            MyMath._viewportHeight,
+            BABYLON.Matrix.IdentityReadOnly,
+            MyMath._viewMatrix,
+            MyMath._projectionMatrix,
+            world_pos
+        );
+    }
+
+    static screenToWorldAtZToRef(screen_pos, z=0, world_pos){
+        const near = MyMath.tmp_worldPosNear;
+        const far = MyMath.tmp_worldPosFar;
+        MyMath.screenToWorldAtNdcToRef(screen_pos, 0, near);
+        MyMath.screenToWorldAtNdcToRef(screen_pos, 1, far);
 
          // nearからfarへのレイとZ平面の交点
         const t = (z - near.z) / (far.z - near.z);
-        return BABYLON.Vector3.Lerp(near, far, t);
+        BABYLON.Vector3.LerpToRef(near, far, t, world_pos);
     }
 
-    static mouse_to_world(mx, my, z){
+    static mouseToWorldToRef(mx, my, z, world_pos){
         const scale = this.get_ui_scale();
-        return this.screen_to_world_at_z({x:(mx /scale), y:(my/scale)}, z);
+        MyMath.screenToWorldAtZToRef({x:(mx /scale), y:(my/scale)}, z, world_pos);
     }
 
     static clamp_ui_object(org_left, org_top, x_pad, y_pad, x_width, y_height){

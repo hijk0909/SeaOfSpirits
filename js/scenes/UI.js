@@ -56,7 +56,7 @@ export class UI {
         };
 
         this.stat_virus = _createTextBlock(panel, "VIRUS:", "magenta");
-        this.stat_plankton = _createTextBlock(panel, "PLANKTON:", "green");
+        this.stat_plankton = _createTextBlock(panel, "PLANKTON:", "#00FF00");
         this.stat_fish = _createTextBlock(panel, "FISH:", "white");
         this.stat_jelly = _createTextBlock(panel, "JELLY:", "white");
         this.stat_squid = _createTextBlock(panel, "SQUID:", "white");

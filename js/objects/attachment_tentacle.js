@@ -3,15 +3,6 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
-// Attachment_Tentacle.js  ─  C案: 連続メッシュ版（継ぎ目なし）rev.3
-//
-// rev.3 変更点
-//   ・根本・先端キャップを廃止（先端は thicknessTip を細くすることで対処）
-//   ・parameters に rootOffset を追加
-//     → root の出発点を socket.normal の逆方向（ボディ内側）へ指定距離だけずらす
-//     → これにより根本がボディに埋まり、根本の隙間が目立たなくなる
-//   ・create_root() に offset 引数を追加
-
 export class Attachment_Tentacle extends Attachment {
 
     // ─────────────────────────────────────────────────────────
@@ -124,7 +115,49 @@ export class Attachment_Tentacle extends Attachment {
 
         this.nodes.push(this._tentacleMesh);
 
-        // ── 作業用一時変数（GC 対策）─────────────────────────
+        // [CAP] キャップメッシュ（先端リング用） 
+        // 頂点：中心1点 + リング TESS 点 = TESS+1 点
+        // 三角形：TESS 個（中心と各リング辺をつなぐ）
+        const CAP_VERT_COUNT = TESS + 1;
+        this._capPositions   = new Float32Array(CAP_VERT_COUNT * 3);
+        this._capNormals     = new Float32Array(CAP_VERT_COUNT * 3);
+        this._capUVs         = new Float32Array(CAP_VERT_COUNT * 2);
+
+        // キャップ UV（中心 = (0.5, 0.5)、リング = 円周上）
+        this._capUVs[0] = 0.5;
+        this._capUVs[1] = 0.5;
+        for (let t = 0; t < TESS; t++) {
+            const ui = (1 + t) * 2;
+            this._capUVs[ui    ] = 0.5 + 0.5 * this._cosT[t];
+            this._capUVs[ui + 1] = 0.5 + 0.5 * this._sinT[t];
+        }
+
+        // キャップ インデックス（中心=0、リング=1..TESS）
+        // 外向き法線に合わせる（チューブ外側に向く扇形）
+        const capIndices = new Int32Array(TESS * 3);
+        let ci = 0;
+        for (let t = 0; t < TESS; t++) {
+            const tNext = (t + 1) % TESS;
+            capIndices[ci++] = 0;           // 中心
+            capIndices[ci++] = 1 + tNext;   // 次の頂点
+            capIndices[ci++] = 1 + t;       // 現在の頂点
+        }
+
+        this._tentacleCapMesh        = new BABYLON.Mesh('tentacle_cap_mesh', this.scene);
+        this._tentacleCapMesh.parent = root;
+
+        const capVd     = new BABYLON.VertexData();
+        capVd.positions = this._capPositions;
+        capVd.normals   = this._capNormals;
+        capVd.uvs       = this._capUVs;
+        capVd.indices   = capIndices;
+        capVd.applyToMesh(this._tentacleCapMesh, true);  // updatable = true
+
+        this._tentacleCapMesh.material = mat;
+
+        this.nodes.push(this._tentacleCapMesh);
+
+        // 作業用一時変数（GC 対策）
         this.straightQuat      = BABYLON.Quaternion.Identity();
         this.tmpFlow           = new BABYLON.Vector3();
         this.tmpLocalFlowDir   = new BABYLON.Vector3();
@@ -297,6 +330,40 @@ export class Attachment_Tentacle extends Attachment {
                 nor[vi3 + 1] = c * lay + s * lby;
                 nor[vi3 + 2] = c * laz + s * lbz;
             }
+
+            // [CAP] 先端リングの計算結果を先端キャップのメッシュ座標に反映
+            if (r === RING_COUNT - 1) {   
+                const wcZx = wm[8],  wcZy = wm[9],  wcZz = wm[10];
+                const lcZx = wcZx * i0 + wcZy * i4 + wcZz * i8;
+                const lcZy = wcZx * i1 + wcZy * i5 + wcZz * i9;
+                const lcZz = wcZx * i2 + wcZy * i6 + wcZz * i10;
+
+                this._capPositions[0] = lcx;
+                this._capPositions[1] = lcy;
+                this._capPositions[2] = lcz;
+                this._capNormals[0]   = lcZx;
+                this._capNormals[1]   = lcZy;
+                this._capNormals[2]   = lcZz;
+
+                for (let t = 0; t < TESS; t++) {
+                    const c   = cosT[t];
+                    const s   = sinT[t];
+                    const vi3 = (1 + t) * 3;
+                    this._capPositions[vi3    ] = lcx + rad * (c * lax + s * lbx);
+                    this._capPositions[vi3 + 1] = lcy + rad * (c * lay + s * lby);
+                    this._capPositions[vi3 + 2] = lcz + rad * (c * laz + s * lbz);
+                    this._capNormals[vi3    ]   = lcZx;
+                    this._capNormals[vi3 + 1]   = lcZy;
+                    this._capNormals[vi3 + 2]   = lcZz;
+                }
+
+                this._tentacleCapMesh.updateVerticesData(
+                    BABYLON.VertexBuffer.PositionKind, this._capPositions, false, false
+                );
+                this._tentacleCapMesh.updateVerticesData(
+                    BABYLON.VertexBuffer.NormalKind, this._capNormals, false, false
+                );
+            }
         }
 
         // GPU へ転送
@@ -308,7 +375,6 @@ export class Attachment_Tentacle extends Attachment {
         );
     }
 
-    // ─────────────────────────────────────────────────────────
     dispose() {
         super.dispose();
     }

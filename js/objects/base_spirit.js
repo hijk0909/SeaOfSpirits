@@ -500,7 +500,7 @@ export class Spirit extends Collidable {
             }
 
             // 環境流の計算
-            this.environment_velocity = GameState.player.get_environment_velocity(this.root.position);
+            GameState.player.EnvironmentVelocityToRef(this.root.position, this.environment_velocity);
 
             // 捕食座標の更新
             if (this.predation_socket){
