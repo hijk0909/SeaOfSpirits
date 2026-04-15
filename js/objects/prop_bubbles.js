@@ -1,15 +1,15 @@
-// bubbles.js
+// prop_bubbles.js
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Drawable } from "./base_drawable.js";
 
-const MAX_BUBBLES = 1000;
+const MAX_BUBBLES = 500;
 const ZERO_SCALE = new BABYLON.Vector3(0, 0, 0);
 const DEFAULT_SCALE = new BABYLON.Vector3(1, 1, 1);
 const UPPER_LIMIT = 9.0;
 const UP_SPEED = 0.01;
 
-export class Bubbles extends Drawable {
+export class Prop_Bubbles extends Drawable {
     constructor(scene, cls) {
         super(scene, cls);
         this.bubble = null;
@@ -23,8 +23,8 @@ export class Bubbles extends Drawable {
     }
 
     create() {
-        this.bubble = BABYLON.MeshBuilder.CreateSphere("bubble", { diameter: 0.1 }, this.scene);
-        this.bubble.alwaysSelectAsActiveMesh = true;
+        this.mesh = BABYLON.MeshBuilder.CreateSphere("bubble", { diameter: 0.1 }, this.scene);
+        this.mesh.alwaysSelectAsActiveMesh = true;
         const mat = new BABYLON.PBRMaterial("bubbleMat", this.scene);
         mat.albedoColor = new BABYLON.Color3(0.5, 0.8, 1.0);
         mat.emissiveColor = new BABYLON.Color3(0.5, 0.8, 1.0); // 自発光
@@ -33,8 +33,8 @@ export class Bubbles extends Drawable {
         mat.metallic = 0.0;
         mat.roughness = 1.0;
         mat.disableLighting = true;
-        this.bubble.material = mat;
-        this.bubble.thinInstanceEnablePicking = false;
+        this.mesh.material = mat;
+        this.mesh.thinInstanceEnablePicking = false;
 
         // 全スロットをスケール0の行列で初期化
         for (let i = 0; i < MAX_BUBBLES; i++) {
@@ -42,7 +42,7 @@ export class Bubbles extends Drawable {
         }
 
         // Float32Arrayをそのまま渡す。第四引数（isStatic）は false に
-        this.bubble.thinInstanceSetBuffer("matrix", this.matrixBuffer, 16, false);
+        this.mesh.thinInstanceSetBuffer("matrix", this.matrixBuffer, 16, false);
     }
 
     _writeMatrix(index, scale, position) {
@@ -63,7 +63,7 @@ export class Bubbles extends Drawable {
         }
         this._writeMatrix(index, DEFAULT_SCALE, pos);
         this.flags[index] = true;
-        this.bubble.thinInstanceBufferUpdated("matrix"); // バッファ更新をGPUに通知
+        this.mesh.thinInstanceBufferUpdated("matrix"); // バッファ更新をGPUに通知
     }
 
     update(time, delta) {
@@ -83,7 +83,7 @@ export class Bubbles extends Drawable {
                 this._writeMatrix(i, ZERO_SCALE, this.tmp_position);
             }
         }
-        this.bubble.thinInstanceBufferUpdated("matrix");
+        this.mesh.thinInstanceBufferUpdated("matrix");
     }
     dispose(){
         if (this.mesh){

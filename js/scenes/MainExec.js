@@ -2,15 +2,17 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from '../GameState.js';
 import { Player } from '../objects/player.js';
-import { Bubbles } from '../objects/bubbles.js';
-import { Remains } from '../objects/remains.js';
+import { Prop_Bubbles } from '../objects/prop_bubbles.js';
+import { Prop_Remains } from '../objects/prop_remains.js';
+import { Prop_SunRays } from '../objects/prop_sunRays.js';
 
 export class Exec {
     constructor(scene) {
         this.scene = scene;
         GameState.player = new Player(this.scene, "Player");
-        GameState.bubbles = new Bubbles(this.scene, "Bubbles");
-        GameState.remains = new Remains(this.scene, "Remains");
+        GameState.bubbles = new Prop_Bubbles(this.scene, "Bubbles");
+        GameState.remains = new Prop_Remains(this.scene, "Remains");
+        GameState.sunRays = new Prop_SunRays(this.scene, "SunRays");
 
         // 距離計算用のテンポラリVector3
         this.tmpDiff    = new BABYLON.Vector3();
@@ -25,11 +27,10 @@ export class Exec {
         // ◆プレイヤー操作
         GameState.player.update(time, delta);
 
-        // ◆泡移動
-        GameState.bubbles.update(time, delta);
-
-        // ◆遺物移動
-        GameState.remains.update(time, delta);
+        // ◆小道具系の移動
+        GameState.bubbles.update(time, delta); //泡
+        GameState.remains.update(time, delta); //遺物
+        GameState.sunRays.update(time, delta); //光の筋
 
         // ◆精霊の管理
         for (let i = GameState.spirits.length - 1; i >= 0; i--) {
@@ -111,6 +112,10 @@ export class Exec {
         if ( GameState.remains ){
             GameState.remains.dispose();
             GameState.remains = null;
+        }
+        if ( GameState.sunRays ){
+            GameState.sunRays.dispose();
+            GameState.sunRays = null;
         }
     }
 

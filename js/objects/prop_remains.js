@@ -1,4 +1,4 @@
-// remains.js
+// prop_remains.js
 import { GLOBALS } from '../GameConst.js';
 import { Drawable } from "./base_drawable.js";
 
@@ -24,7 +24,7 @@ const ST_TRANSPARENT_COUNT      = 60;   // フレーム数（整数カウンタ�
 const ST_REMAINING_PERIOD       = 900;  // 秒（delta/1000 で加算）
 const ST_DISAPPEARING_COUNT     = 60;  // フレーム数（整数カウンタ）
 
-export class Remains extends Drawable {
+export class Prop_Remains extends Drawable {
     constructor(scene, cls) {
         super(scene, cls);
         this.mesh = null;

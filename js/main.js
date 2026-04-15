@@ -43,6 +43,74 @@ function set_shader(){
             gl_FragColor = mix(baseColor, wipeColor, mask * alpha);
         }
     `;
+
+    BABYLON.Effect.ShadersStore["sunRayVertexShader"] = `
+        precision highp float;
+        attribute vec3 position;
+        attribute vec2 uv;
+
+        // thinInstance用 mat4を4つの vec4 で受け取る
+        attribute vec4 world0;
+        attribute vec4 world1;
+        attribute vec4 world2;
+        attribute vec4 world3;
+
+        uniform mat4 viewProjection;
+        uniform vec3 lightDir;
+        varying vec2 vUV;
+        varying vec3 vLocalPos;
+        varying vec3 vWorldPos;
+
+        void main() {
+            vUV = uv;
+
+            // attribute から mat4 を再構成
+            mat4 world = mat4(world0, world1, world2, world3);
+
+            vec3 local = position;
+            vec3 pivot = vec3(0.0, 0.0, 0.0);
+            vec3 p = local;
+
+            vec3 up = vec3(0.0, 1.0, 0.0);
+            vec3 axis = normalize(cross(up, lightDir));
+            float angle = acos(dot(up, lightDir));
+            float c = cos(angle);
+            float s = sin(angle);
+            float t = 1.0 - c;
+            mat3 rot = mat3(
+                t*axis.x*axis.x + c,        t*axis.x*axis.y - s*axis.z, t*axis.x*axis.z + s*axis.y,
+                t*axis.x*axis.y + s*axis.z, t*axis.y*axis.y + c,        t*axis.y*axis.z - s*axis.x,
+                t*axis.x*axis.z - s*axis.y, t*axis.y*axis.z + s*axis.x, t*axis.z*axis.z + c
+            );
+
+            p = rot * p;
+            vec3 finalLocal = p + pivot;
+            vLocalPos = finalLocal;
+
+            vec4 worldPos = world * vec4(finalLocal, 1.0);
+            vWorldPos = worldPos.xyz;
+
+            gl_Position = viewProjection * worldPos;
+        }
+    `;
+
+    BABYLON.Effect.ShadersStore["sunRayFragmentShader"] = `
+        precision highp float;
+
+        varying vec2 vUV;
+        varying vec3 vLocalPos;
+
+        uniform float alpha;
+
+        void main() {
+            // 上が0、下が-高さ
+            float h = vLocalPos.y;
+            // フェード
+            float heightFade = clamp((h + 9.0) / 15.0, 0.0, 1.0);
+
+            gl_FragColor = vec4(1.0, 1.0, 1.0, alpha * heightFade);
+        }
+    `;
 }
 
 async function startGame() {

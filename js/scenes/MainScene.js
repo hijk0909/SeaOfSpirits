@@ -30,7 +30,7 @@ export class MainScene extends Scene {
             {t:0.60, r:0.8, g:0.3, b:0.2, i: 2.0},
             {t:0.65, r:0.0, g:0.0, b:0.3, i: 1.0},
             {t:0.75, r:0.0, g:0.0, b:0.8, i: 1.0},
-            {t:0.85, r:0.5, g:0.0, b:0.2, i: 1.5},
+            {t:0.85, r:0.2, g:0.0, b:0.2, i: 1.5},
             {t:0.90, r:0.9, g:0.3, b:0.2, i: 2.5},
             {t:0.95, r:0.6, g:0.2, b:0.2, i: 3.0},
             {t:1.00, r:0.2, g:0.3, b:0.4, i: 5.0}
@@ -100,7 +100,7 @@ export class MainScene extends Scene {
         hemiLight.groundColor = new BABYLON.Color3(0.05, 0.05, 0.1);
 
         // ◇平行光源（太陽光）
-        this.timeOfDay = 0.1; // 0=朝、0.25=正午、0.5=夕方、0.75=真夜中
+        GameState.timeOfDay = 0.1; // 0=朝、0.25=正午、0.5=夕方、0.75=真夜中
         this.DAY_SPEED = 0.004; // 時間の進行速度 0.004
         this.FLUCTUATION_SPEED = 0.007; // ゆらぎ光の周波数
         this.sunLight = new BABYLON.DirectionalLight( "sun", new BABYLON.Vector3(-1, -1, 0),  scene);
@@ -213,6 +213,8 @@ export class MainScene extends Scene {
             GameState.asset.jingle.stagestart.play(false);
             // [WIPE]
             this.wipe.wipe_in(3000);
+            // [SUN_RAY]
+            GameState.sunRays.initialize();
             // [TRANSIT]
             this.stage_state_count = 2.5;
             GameState.stage_state = GLOBALS.STAGE_STATE.STARTING;
@@ -327,22 +329,22 @@ export class MainScene extends Scene {
     }
 
     update_sunLight(time, delta){
-        this.timeOfDay = (this.timeOfDay + delta / 1000 * this.DAY_SPEED) % 1.0;
-        const angle = this.timeOfDay * Math.PI * 2;
+        GameState.timeOfDay = (GameState.timeOfDay + delta / 1000 * this.DAY_SPEED) % 1.0;
+        const angle = GameState.timeOfDay * Math.PI * 2;
 
-        // 太陽の方向ベクトルを更新（Y軸周りに回転）
+        // 太陽の方向ベクトルを更新（Z軸周りに回転）
         this.tmp_sunLightDirection.set(Math.cos(angle), -Math.sin(angle), 0.3);
         this.tmp_sunLightDirection.normalize();
         this.sunLight.direction.copyFrom(this.tmp_sunLightDirection);
 
         // 太陽光
-        this.getTimedColorToRef(this.sunLight_colors, this.timeOfDay, this.tmp_timedColor);
+        this.getTimedColorToRef(this.sunLight_colors, GameState.timeOfDay, this.tmp_timedColor);
         this.sunLight.diffuse.set(this.tmp_timedColor.r, this.tmp_timedColor.g, this.tmp_timedColor.b);
         this.fluctuation = (this.fluctuation + delta / 10 * this.FLUCTUATION_SPEED) % 1.0;
         this.sunLight.intensity = this.tmp_timedColor.i * (0.7 + Math.sin(this.fluctuation * Math.PI * 2) * 0.3);
 
         // 背景色
-        this.getTimedColorToRef(this.background_colors, this.timeOfDay, this.tmp_timedColor);
+        this.getTimedColorToRef(this.background_colors, GameState.timeOfDay, this.tmp_timedColor);
         this.scene.clearColor.set(this.tmp_timedColor.r, this.tmp_timedColor.g, this.tmp_timedColor.b);
         this.scene.fogColor.set(this.tmp_timedColor.r, this.tmp_timedColor.g, this.tmp_timedColor.b);
     }

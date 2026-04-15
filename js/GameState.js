@@ -25,6 +25,7 @@ export const GameState = {
     // ゲーム情報
     score : 0,
     elapsed_time : 0,
+    timeOfDay : 0,
     ui_manager : null,
     spawn : null,
 
@@ -34,6 +35,7 @@ export const GameState = {
     effects : [],
     bubbles : null,
     remains : null,
+    sunRays : null,
 
     reset(){
         this.elapsed_time = 0;
