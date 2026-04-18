@@ -4,6 +4,8 @@ import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
 import { MyDraw } from "../utils/DrawUtils.js";
 
+const BOIDS_INTERVAL = 2;  // [適正値] 2
+
 // 魚
 export class Spirit_Fish extends Spirit {
 
@@ -28,6 +30,7 @@ export class Spirit_Fish extends Spirit {
         this.separationRadius = 3.0;
         this.base_color = new BABYLON.Color3();
         this.base_color_2 = new BABYLON.Color3();
+        this.boids_counter = 0;
 
         // テンポラリ変数
         this.tmpSeparation = new BABYLON.Vector3();
@@ -122,7 +125,7 @@ export class Spirit_Fish extends Spirit {
         def = {
             name: "Attachment_Tentacle",
             socket: {front:-0.1, thetaDeg:90, phiDeg:0},
-            params: {segmentCont : 4, length : tentacle_length, offset : -0.1, material_key : "tentacle"}
+            params: {segmentCont : 4, segmentLength : tentacle_length, offset : -0.1, material_key : "tentacle"}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.thetaDeg *= -1;
@@ -177,70 +180,76 @@ export class Spirit_Fish extends Spirit {
     }
 
     update(time, delta){
-        // BOIDS
-        this.tmpSeparation.copyFrom(GLOBALS.ZERO_VECTOR);
-        this.tmpAlignment.copyFrom(GLOBALS.ZERO_VECTOR);
-        this.tmpCohesion.copyFrom(GLOBALS.ZERO_VECTOR);
-        this.tmpForward = this.get_forward_vector();
-        
-        let count = 0;
 
-        for (let other of GameState.spirits){
-            if ( other === this ) continue;
-            if ( other.class_name !== this.class_name) continue;
-            const distSq = BABYLON.Vector3.DistanceSquared(other.root.position, this.root.position);
-            if ( distSq > this.perceptionRadius * this.perceptionRadius) continue;
+        this.boids_counter++;
+        if (this.boids_counter > BOIDS_INTERVAL){
+            this.boids_counter = 0;
 
-            // separation
-            if( distSq < this.separationRadius * this.separationRadius){
-                const dist = Math.sqrt(distSq);
-                if (dist < 0.0001) continue;
-                this.root.position.subtractToRef(other.root.position, this.tmpDiff);
-                let t = (this.separationRadius - dist) / this.separationRadius;
-                let strength = t * t;
-                this.tmpDiff.normalize();
-                this.tmpDiff.scaleInPlace(strength);
-                this.tmpSeparation.addInPlace(this.tmpDiff);
+            // BOIDS
+            this.tmpSeparation.copyFrom(GLOBALS.ZERO_VECTOR);
+            this.tmpAlignment.copyFrom(GLOBALS.ZERO_VECTOR);
+            this.tmpCohesion.copyFrom(GLOBALS.ZERO_VECTOR);
+            this.tmpForward = this.get_forward_vector();
+            
+            let count = 0;
+
+            for (let other of GameState.spirits){
+                if ( other === this ) continue;
+                if ( other.class_name !== this.class_name) continue;
+                const distSq = BABYLON.Vector3.DistanceSquared(other.root.position, this.root.position);
+                if ( distSq > this.perceptionRadius * this.perceptionRadius) continue;
+
+                // separation
+                if( distSq < this.separationRadius * this.separationRadius){
+                    const dist = Math.sqrt(distSq);
+                    if (dist < 0.0001) continue;
+                    this.root.position.subtractToRef(other.root.position, this.tmpDiff);
+                    let t = (this.separationRadius - dist) / this.separationRadius;
+                    let strength = t * t;
+                    this.tmpDiff.normalize();
+                    this.tmpDiff.scaleInPlace(strength);
+                    this.tmpSeparation.addInPlace(this.tmpDiff);
+                }
+
+                other.root.position.subtractToRef(this.root.position, this.tmpOffset)
+                this.tmpOffset.normalizeToRef(this.tmpVec);
+                let dot = BABYLON.Vector3.Dot(this.tmpForward, this.tmpVec);
+                if (dot < 0.3) continue;
+
+                count++;
+                // cohesion
+                this.tmpCohesion.addInPlace(other.root.position);
+                // alignment
+                this.tmpAlignment.addInPlace(other.velocity);
             }
 
-            other.root.position.subtractToRef(this.root.position, this.tmpOffset)
-            this.tmpOffset.normalizeToRef(this.tmpVec);
-            let dot = BABYLON.Vector3.Dot(this.tmpForward, this.tmpVec);
-            if (dot < 0.3) continue;
+            if(count > 0){
+                this.tmpCohesion.scaleInPlace(1/count);
+                this.tmpCohesion.subtractInPlace(this.root.position);
+                this.tmpAlignment.scaleInPlace(1/count);
+            }
 
-            count++;
-            // cohesion
-            this.tmpCohesion.addInPlace(other.root.position);
-            // alignment
-            this.tmpAlignment.addInPlace(other.velocity);
-        }
+            // 速度の合成
+            this.tmpAccel.copyFrom(this.tmpSeparation);
+            this.tmpAccel.scaleInPlace(2.0); //群れから離れる
 
-        if(count > 0){
-            this.tmpCohesion.scaleInPlace(1/count);
-            this.tmpCohesion.subtractInPlace(this.root.position);
-            this.tmpAlignment.scaleInPlace(1/count);
-        }
+            this.tmpAlignment.scaleInPlace(0.3); //群れの速度に合わせる
+            this.tmpAccel.addInPlace(this.tmpAlignment);
 
-        // 速度の合成
-        this.tmpAccel.copyFrom(this.tmpSeparation);
-        this.tmpAccel.scaleInPlace(2.0); //群れから離れる
+            this.tmpCohesion.scaleInPlace(0.008); // 群れの中止に向かう
+            this.tmpAccel.addInPlace(this.tmpCohesion);
 
-        this.tmpAlignment.scaleInPlace(0.3); //群れの速度に合わせる
-        this.tmpAccel.addInPlace(this.tmpAlignment);
+            this.tmpVec.copyFrom(this.root.position);
+            this.tmpVec.scaleInPlace(-0.003); //グローバル座標の中心に向かう
+            this.tmpAccel.addInPlace(this.tmpVec);
 
-        this.tmpCohesion.scaleInPlace(0.008); // 群れの中止に向かう
-        this.tmpAccel.addInPlace(this.tmpCohesion);
+            this.tmpAccel.scaleInPlace(this.genome.accel); //加速度の調整
+            this.control_velocity.addInPlace(this.tmpAccel);
 
-        this.tmpVec.copyFrom(this.root.position);
-        this.tmpVec.scaleInPlace(-0.003); //グローバル座標の中心に向かう
-        this.tmpAccel.addInPlace(this.tmpVec);
-
-        this.tmpAccel.scaleInPlace(this.genome.accel); //加速度の調整
-        this.control_velocity.addInPlace(this.tmpAccel);
-
-        if (this.control_velocity.length() > this.genome.speed){
-            this.control_velocity = this.control_velocity.normalize()
-            this.control_velocity.scaleInPlace(this.genome.speed);
+            if (this.control_velocity.length() > this.genome.speed){
+                this.control_velocity = this.control_velocity.normalize()
+                this.control_velocity.scaleInPlace(this.genome.speed);
+            }
         }
 
         this.look_at(this.control_velocity, delta);

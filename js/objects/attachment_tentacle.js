@@ -3,24 +3,33 @@ import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
 
+const LOD_THREASHOLD = -0.5;  // [適正値] -0.5
+const LOD_REFRESH_PERIOD = 1.0; // [適正値] 1.0
+
 export class Attachment_Tentacle extends Attachment {
 
     // ─────────────────────────────────────────────────────────
     constructor(spirit, socket, parameters = {}) {
         super(spirit, socket);
 
+        this.lod_refresh_timer = LOD_REFRESH_PERIOD;
+
         const {
             segmentCount  = 4,
-            length        = 0.25,
+            segmentLength = 0.25,
             thicknessBase = 0.5,
             thicknessTip  = 0.1,
             material_key  = "",
             offset        = 0.0,
+            bendRatio     = 0.4,
+            bendSpeed     = 0.1
         } = parameters;
 
-        this.segments     = [];
-        this.segmentCount = segmentCount;
-        this.length       = length;
+        this.segments       = [];
+        this.segmentCount   = segmentCount;
+        this.segmentLength  = segmentLength;
+        this.bendRatio      = bendRatio;
+        this.bendSpeed      = bendSpeed;
 
         // 骨格ノード
         const root      = this.create_root(socket, offset);
@@ -34,7 +43,7 @@ export class Attachment_Tentacle extends Attachment {
             pivot.parent   = prevPivot;
             pivot.position = i === 0
                 ? new BABYLON.Vector3(0, 0, 0)
-                : new BABYLON.Vector3(0, 0, length);
+                : new BABYLON.Vector3(0, 0, segmentLength);
             pivot.rotationQuaternion = BABYLON.Quaternion.Identity();
             this.nodes.push(pivot);
             this.segments.push({ pivot });
@@ -174,6 +183,13 @@ export class Attachment_Tentacle extends Attachment {
     update(time, delta) {
         if (this.segments.length <= 1) return;
 
+        // 近いキャラクター以外は更新間隔を極端に低くする（計算量LOD）
+        if (this.spirit.root.position.z > LOD_THREASHOLD ){
+            this.lod_refresh_timer += delta / 1000;
+            if (this.lod_refresh_timer < LOD_REFRESH_PERIOD) return;
+            this.lod_refresh_time = 0;
+        }
+
         // 骨格の回転計算
         if (this.spirit.velocity.length() > 0.0001) {
             this.tmpFlow.copyFrom(this.spirit.velocity);
@@ -202,7 +218,7 @@ export class Attachment_Tentacle extends Attachment {
                 this.tmpLocalFlowDir, up, this.tmpFlowQuat
             );
 
-            const flowInfluence = (1 - (i / this.segments.length)) * 0.4;
+            const flowInfluence = (1 - (i / this.segments.length)) * this.bendRatio;
             BABYLON.Quaternion.SlerpToRef(
                 this.straightQuat,
                 this.tmpFlowQuat,
@@ -210,7 +226,7 @@ export class Attachment_Tentacle extends Attachment {
                 this.tmpDesiredQuat
             );
 
-            const slerpSpeed = Math.min(delta * 0.10, 0.1);
+            const slerpSpeed = Math.min(delta * this.bendSpeed, 0.1);
             BABYLON.Quaternion.SlerpToRef(
                 pivot.rotationQuaternion,
                 this.tmpDesiredQuat,
@@ -264,7 +280,7 @@ export class Attachment_Tentacle extends Attachment {
         const cosT       = this._cosT;
         const sinT       = this._sinT;
         const segCount   = this.segments.length;
-        const length     = this.length;
+        const segLength  = this.segmentLength;
 
         // root のワールド逆行列をフレームあたり1回だけ計算
         this._root.getWorldMatrix().invertToRef(this._invRootWorld);
@@ -290,9 +306,9 @@ export class Attachment_Tentacle extends Attachment {
             } else {
                 // 先端リング：最終 pivot の Z+ 方向へ length 進む
                 wm  = this.segments[segCount - 1].pivot.getWorldMatrix().m;
-                wcx = wm[12] + wm[8]  * length;
-                wcy = wm[13] + wm[9]  * length;
-                wcz = wm[14] + wm[10] * length;
+                wcx = wm[12] + wm[8]  * segLength;
+                wcy = wm[13] + wm[9]  * segLength;
+                wcz = wm[14] + wm[10] * segLength;
             }
 
             // ワールド中心 → root ローカル中心

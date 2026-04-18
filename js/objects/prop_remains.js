@@ -5,13 +5,13 @@ import { Drawable } from "./base_drawable.js";
 const MAX_REMAINS = 2000;
 const ZERO_SCALE    = new BABYLON.Vector3(0, 0, 0);
 const ZERO_POSITION = new BABYLON.Vector3(0, 0, 0);
-const ALPHA_START     = 0.2;
-const ALPHA_REMAINING = 0.1;
+const ALPHA_START     = 0.9;
+const ALPHA_REMAINING = 0.05;
 
-const SCALE_FACTOR = 0.75;
+const SCALE_FACTOR = 0.60;
 const DOWN_SPEED  = 0.001;
 const DEPTH_SPEED = 0.001;
-const ROTATE_SPEED = 0.002;
+const ROTATE_SPEED = 0.001;
 
 const ST_APPEARING    = 0;
 const ST_TRANSPARENT  = 1;
@@ -21,7 +21,7 @@ const ST_DISAPPEARING = 4;
 
 const ST_APPEARING_COUNT        = 60;   // フレーム数（整数カウンタ）
 const ST_TRANSPARENT_COUNT      = 60;   // フレーム数（整数カウンタ）
-const ST_REMAINING_PERIOD       = 900;  // 秒（delta/1000 で加算）
+const ST_REMAINING_PERIOD       = 900;  // 秒（delta/1000 で加算） 900
 const ST_DISAPPEARING_COUNT     = 60;  // フレーム数（整数カウンタ）
 
 export class Prop_Remains extends Drawable {
@@ -31,6 +31,7 @@ export class Prop_Remains extends Drawable {
 
         this.matrixBuffer = new Float32Array(MAX_REMAINS * 16);
         this.colorBuffer  = new Float32Array(MAX_REMAINS * 4);
+
         this.flags = new Array(MAX_REMAINS).fill(false);
 
         // 各インスタンスの状態を保持する配列
@@ -106,12 +107,12 @@ export class Prop_Remains extends Drawable {
     }
 
     add_remain(pos, color, scale = 1) {
+
         const index = this.flags.findIndex(f => f === false);
         if (index === -1) {
             console.warn("No free remain slot");
             return;
         }
-
         this.flags[index] = true;
 
         // stats を初期化

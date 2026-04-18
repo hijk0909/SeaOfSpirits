@@ -12,6 +12,8 @@ import { GameOverScene } from "./GameOverScene.js";
 import { GameClearScene } from "./GameClearScene.js";
 import { Wipe } from "../utils/DrawUtils.js";
 import { Game } from '../main.js';
+import { ThinManager_Plankton } from "../objects/thinManager_plankton.js";
+import { ThinManager_Virus } from "../objects/thinManager_virus.js";
 
 export class MainScene extends Scene {
     constructor(game) {
@@ -36,7 +38,7 @@ export class MainScene extends Scene {
             {t:1.00, r:0.2, g:0.3, b:0.4, i: 5.0}
         ]
         this.background_colors = [
-            {t:0.00, r:0.0, g:0.2, b:0.6, i: 0.0},
+            {t:0.00, r:0.0, g:0.4, b:0.6, i: 0.0},
             {t:0.25, r:0.0, g:0.5, b:1.0, i: 0.0},
             {t:0.50, r:0.0, g:0.3, b:0.6, i: 0.0},
             {t:0.55, r:0.1, g:0.2, b:0.4, i: 0.0},
@@ -44,9 +46,9 @@ export class MainScene extends Scene {
             {t:0.65, r:0.0, g:0.0, b:0.2, i: 0.0},
             {t:0.75, r:0.0, g:0.0, b:0.0, i: 0.0},
             {t:0.85, r:0.0, g:0.0, b:0.2, i: 0.0},
-            {t:0.90, r:0.4, g:0.1, b:0.2, i: 0.0},
-            {t:0.95, r:0.1, g:0.2, b:0.5, i: 0.0},
-            {t:1.00, r:0.0, g:0.2, b:0.6, i: 0.0}
+            {t:0.90, r:0.5, g:0.1, b:0.2, i: 0.0},
+            {t:0.95, r:0.1, g:0.2, b:0.3, i: 0.0},
+            {t:1.00, r:0.0, g:0.4, b:0.6, i: 0.0}
         ]
     }
 
@@ -90,6 +92,8 @@ export class MainScene extends Scene {
     // ■ 初期生成
     create() {
         // console.log("GameScene.create");
+        // [BABYLON DEBUG]
+        // this.scene.debugLayer.show();
         const scene = this.scene;
         scene.clearColor = new BABYLON.Color4(0.0, 0.03, 0.10, 1.0);
 
@@ -135,6 +139,12 @@ export class MainScene extends Scene {
         // オブジェクト生成クラスの生成
         GameState.spawn = new Spawn(this.scene);
         GameState.spawn_scheduler = new SpawnScheduler(this.scene, GameState.spawn);
+
+        // thinInstanceManager の生成
+        const st_plankton = GameState.spawn.spirit_class_state["Spirit_Plankton"];
+        GameState.thinManager_plankton = new ThinManager_Plankton(st_plankton.max_num);
+        const st_virus = GameState.spawn.spirit_class_state["Spirit_Virus"];    
+        GameState.thinManager_virus = new ThinManager_Virus(st_virus.max_num);
 
         // 実行クラスの生成
         this.exec = new Exec(this.scene);
@@ -279,8 +289,15 @@ export class MainScene extends Scene {
             if (this.exec){
                 this.exec.update(time, delta);
             }
+
             if (this.my_input){
                 this.my_input.update(time, delta);
+            }
+            if (GameState.thinManager_plankton){
+                GameState.thinManager_plankton.update(time, delta);
+            }
+            if (GameState.thinManager_virus){
+                GameState.thinManager_virus.update(time, delta);
             }
         }
 

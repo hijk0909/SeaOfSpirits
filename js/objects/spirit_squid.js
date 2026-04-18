@@ -32,7 +32,7 @@ export class Spirit_Squid extends Spirit {
         this.state_counter = 0;
         this.aligning_speed = 0.01;
         this.base_color = new BABYLON.Color3(0.0, 0.5, 1.0);
-        this.tentacle_color = new BABYLON.Color3(0.7, 1.0, 1.0);
+        this.parts_color = new BABYLON.Color3(0.7, 1.0, 1.0);
 
         // テンポラリ変数
         this.tmp_target = new BABYLON.Vector3(0,0,0);
@@ -42,7 +42,7 @@ export class Spirit_Squid extends Spirit {
 
     create(genome_modifier){
         const speed_ratio = genome_modifier?.speed ?? 1.0;
-        this.tentacle_color.copyFrom(MyDraw.saturatedColor(speed_ratio));
+        this.parts_color.copyFrom(MyDraw.saturatedColor(speed_ratio));
 
         super.create(genome_modifier);
     }
@@ -58,23 +58,23 @@ export class Spirit_Squid extends Spirit {
         mat.alpha = 1.0;
         this.shared_materials.set("eye", mat);
 
-        mat = new BABYLON.PBRMaterial("fin", this.scene);
-        mat.albedoColor = this.base_color;
+        mat = new BABYLON.PBRMaterial("parts", this.scene);
+        mat.albedoColor.copyFrom(this.parts_color);
         mat.metallic = 1.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
-        this.shared_materials.set("fin", mat);
-
+        this.shared_materials.set("parts", mat);
+/*
         mat = new BABYLON.PBRMaterial("tentacle", this.scene);
         mat.albedoColor.copyFrom(this.tentacle_color);
         mat.metallic = 1.0;
         mat.roughness = 1.0;
         mat.alpha = 1.0;
         this.shared_materials.set("tentacle", mat);
-
+*/
         mat = null;
 
-        this.remain_color.copyFrom(this.tentacle_color);
+        this.remain_color.copyFrom(this.parts_color);
     }
 
     _create_body(){
@@ -101,7 +101,7 @@ export class Spirit_Squid extends Spirit {
 
         def = {
             name: "Attachment_Tentacle",
-            params: {segmentCont : 3, length : 0.20, thicknessBase : 0.3, thicknessTip : 0.02, material_key : "tentacle"}
+            params: {segmentCont : 3, segmentLength : 0.20, thicknessBase : 0.3, thicknessTip : 0.02, material_key : "parts"}
         };
         for (let i = 0; i < 360; i += 60){
             const {theta, phi} = MyMath.rotate_to_front(-45, i);
@@ -121,7 +121,7 @@ export class Spirit_Squid extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:+0.2, thetaDeg:0, phiDeg: +25},
-            params: {bottomScale : 1.2, height : 0.8, twist : 90, material_key : "fin" }
+            params: {bottomScale : 1.2, height : 0.8, twist : 90, material_key : "parts" }
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;

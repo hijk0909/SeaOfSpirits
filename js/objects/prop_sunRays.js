@@ -7,6 +7,7 @@ const MAX_RAYS = 20;
 const ZERO_SCALE = new BABYLON.Vector3(0, 0, 0);
 const DEFAULT_SCALE = new BABYLON.Vector3(1, 1, 1);
 const RAY_LENGTH = 20.0;
+const RAY_ALPHA = 0.4;
 
 export class Prop_SunRays extends Drawable {
     constructor(scene, cls) {
@@ -73,7 +74,7 @@ export class Prop_SunRays extends Drawable {
             console.warn("No free ray slot");
             return;
         }
-        pos.y += (RAY_LENGTH * 0.45 )+ pos.z; // 上端が見えないように奥ほど上げる
+        pos.y += RAY_LENGTH * 0.45 + pos.z + 0.2; // 上端が見えないように奥ほど上げる
         this._writeMatrix(index, DEFAULT_SCALE, pos);
         this.flags[index] = true;
         this.mesh.thinInstanceBufferUpdated("matrix"); // バッファ更新をGPUに通知
@@ -90,17 +91,20 @@ export class Prop_SunRays extends Drawable {
     update(time, delta) {
         const tod = GameState.timeOfDay;
         if (0.08 < tod && tod < 0.18){
-            const alpha = (tod - 0.08) / (0.18 - 0.08);
-            this.shader.setFloat("alpha", alpha * 0.5);
+            const alpha = ((tod - 0.08) / (0.18 - 0.08))*RAY_ALPHA;
+            this.shader.setFloat("alpha", alpha);
         }
         if (0.32 < tod && tod < 0.42){
-            const alpha = 1.0 - (tod - 0.32) / (0.42 - 0.32);
-            this.shader.setFloat("alpha", alpha * 0.5);
+            const alpha = (1.0 - (tod - 0.32) / (0.42 - 0.32))*RAY_ALPHA;
+            this.shader.setFloat("alpha", alpha);
         }
         if (0.0 < tod && tod < 0.5){
             const angle = tod * Math.PI * 2;
             this.ray_direction.set(Math.cos(angle), Math.sin(angle), 0.0);
             this.shader.setVector3("lightDir", this.ray_direction);
+        }
+        if (tod < 0.08 || 0.42 < tod){
+            this.shader.setFloat("alpha", 0.0);
         }
         if (this.prev_tod < 0.75 && tod >= 0.75){
             this.initialize();

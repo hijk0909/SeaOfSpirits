@@ -28,12 +28,18 @@ export class Spirit_Jelly extends Spirit {
         this.texture_color_1 = new BABYLON.Color3();
         this.texture_color_2 = new BABYLON.Color3();
         this.target = new BABYLON.Vector3(0,0,0);
+        this.num_tentacles = 3;
+        this.num_spines = 7;
     }
 
     create(genome_modifier){
         const speed_ratio = genome_modifier?.speed ?? 1.0;
         this.texture_color_1.copyFrom(MyDraw.saturatedColor(speed_ratio));
         this.texture_color_2.copyFromFloats(1.0, 1.0, 0.0);
+        const diff_parts = Math.floor(Math.max(0, speed_ratio - 1) * 3); // 0以上3以下
+        this.num_tentacles = 3 + diff_parts;
+        this.num_spines = 7 - diff_parts;
+
 
         super.create(genome_modifier);
     }
@@ -81,13 +87,16 @@ export class Spirit_Jelly extends Spirit {
     _set_attachment_definitions(genome){
 
         let def;
+        let num_parts;
 
         def = {
             name: "Attachment_Tentacle",
-            params: {segmentCont : 4, length : 0.30, thicknessBase : 0.2, thicknessTip : 0.06, material_key : "tentacle"}
+            params: {segmentCont : 5, segmentLength : 0.35, thicknessBase : 0.2, thicknessTip : 0.15, bendRatio : 1.0, bendSpeed : 0.001, material_key : "tentacle"}
         };
-        for (let i = 0; i < 360; i += 120){
-            const {theta, phi} = MyMath.rotate_to_front(-30, i);
+        num_parts = this.num_tentacles;
+        for (let i = 0; i < num_parts; i++){
+            const phi_i = i * (360 / num_parts);
+            const {theta, phi} = MyMath.rotate_to_front(-35, phi_i);
             def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
             this.attachment_definitions.push(structuredClone(def));
         }
@@ -96,8 +105,10 @@ export class Spirit_Jelly extends Spirit {
             name: "Attachment_Spine",
             params: {diameterBottom : 0.15, height :0.24, material_key : "spine"}
         };
-        for (let i = 0; i < 360; i += 90){
-            const {theta, phi} = MyMath.rotate_to_front(+60, i);
+        num_parts = this.num_spines;
+        for (let i = 0; i < num_parts; i++){
+            const phi_i = i * (360 / num_parts);
+            const {theta, phi} = MyMath.rotate_to_front(+20, phi_i);
             def.socket = {front:0.0, thetaDeg:theta, phiDeg: phi};
             this.attachment_definitions.push(structuredClone(def));
         }

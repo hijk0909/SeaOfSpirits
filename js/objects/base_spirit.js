@@ -10,7 +10,7 @@ import { Attachment_Mouth} from "./attachment_mouth.js";
 import { Attachment_Fin} from "./attachment_fin.js";
 
 const FLASH_TIME = 0.15; //秒
-const FALSH_INTENSITY = 0.15;
+const FALSH_INTENSITY = 0.10;
 const LOD_THRESHOLD = 12.0;
 
 export class Spirit extends Collidable {
@@ -112,7 +112,9 @@ export class Spirit extends Collidable {
 
         // ボディの生成
         this._create_body();
-        this.mesh.computeWorldMatrix(true);
+        if (this.mesh){
+            this.mesh.computeWorldMatrix(true);
+        }
 
         // 捕食口の座標設定（socket → position）
         if (this.genome.predation_classes.length > 0){
@@ -143,7 +145,9 @@ export class Spirit extends Collidable {
         }
 
         // ボディの表示用の大きさを調整（アタッチメントを全てくっつけてから）
-        this.mesh.scaling = new BABYLON.Vector3(this.genome.disp_scale, this.genome.disp_scale, this.genome.disp_scale);
+        if (this.mesh){
+            this.mesh.scaling = new BABYLON.Vector3(this.genome.disp_scale, this.genome.disp_scale, this.genome.disp_scale);
+        }
 
         // emmisiveColor のある 全マテリアルの収集
         // clone（個別化）のある マテリアルに限定する
@@ -485,6 +489,7 @@ export class Spirit extends Collidable {
     }
 
     update(time, delta){
+
         if (this.dying){
             this.set_alpha(this.dying_ratio);
         } else {
@@ -498,7 +503,6 @@ export class Spirit extends Collidable {
                 GameState.remains.add_remain(this.root.position, this.remain_color, this.collisionRadius);
                 GameState.asset.se.extinction.play_3D(this.root.position);
             }
-
             // 環境流の計算
             GameState.player.EnvironmentVelocityToRef(this.root.position, this.environment_velocity);
 
@@ -537,6 +541,7 @@ export class Spirit extends Collidable {
                 }
             }
         }
+
         super.update(time, delta);
     }
 

@@ -4,6 +4,9 @@ import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
 import { MyDraw } from "../utils/DrawUtils.js";
 
+const MAX_CANDIDATES = 5;
+const SEARCH_COOLDOWN_PERIOD = 1.0;
+
 // サメ
 export class Spirit_Shark extends Spirit {
     constructor(scene, class_name, generation){    
@@ -29,6 +32,7 @@ export class Spirit_Shark extends Spirit {
         this.slowRadius = 2.5;      //接近時減速半径
         this.arrivalRadius = 0.2;   //到着判定半径
         this.minSpeedRatio = 0.03;
+        this.search_cooldown_counter = 0;
         this.chasePeriod = 2.0 * (0.4 + Math.random() * 1.2); //追跡時間：個体による「ゆらぎ」
         this.chaseTimer = this.chasePeriod;
         this.base_color = new BABYLON.Color3();
@@ -42,6 +46,7 @@ export class Spirit_Shark extends Spirit {
         this.tmp_steering = new BABYLON.Vector3();
         this.tmp_forward = new BABYLON.Vector3();
         this.tmp_controlNorm = new BABYLON.Vector3();
+        this.tmp_candidates = [MAX_CANDIDATES];
     }
 
     create(genome_modifier){
@@ -168,100 +173,168 @@ export class Spirit_Shark extends Spirit {
         super.deactivate();
     }
 
+    search_target(){
+
+        // 候補抽出
+        const radiusSq = this.visibleRadius * this.visibleRadius;
+        let bestPrey = null;
+        let bestDistSq = Infinity;
+
+        // 上位MAX_CANDIDATES件を保持（固定長）
+        const candidates = this.tmp_candidates;
+        let count = 0;
+
+        for (let i = 0; i < GameState.spirits.length; i++) {
+            const s = GameState.spirits[i];
+            if (!s.alive || s.dying) continue;
+            if (!this.genome.predation_classes.includes(s.class_name)) continue;
+
+            const dx = s.root.position.x - this.root.position.x;
+            const dy = s.root.position.y - this.root.position.y;
+            const dz = s.root.position.z - this.root.position.z;
+            const distSq = dx*dx + dy*dy + dz*dz;
+
+            if (distSq >= radiusSq) continue;
+
+            // 上位MAX_CANDIDATES件に入れる（挿入ソート）
+            if (count < MAX_CANDIDATES) {
+                candidates[count++] = { spirit: s, distSq };
+            } else {
+                // 最大要素を探して置換
+                let maxIdx = 0;
+                for (let j = 1; j < 5; j++) {
+                    if (candidates[j].distSq > candidates[maxIdx].distSq) maxIdx = j;
+                }
+                if (distSq < candidates[maxIdx].distSq) candidates[maxIdx] = { spirit: s, distSq };
+            }
+        }
+
+        // 仲間探索
+        let hasFriend = false;
+
+        for (let i = 0; i < GameState.spirits.length; i++) {
+            const s = GameState.spirits[i];
+
+            if (s === this || !s.alive || s.class_name !== this.class_name) continue;
+
+            const dx = s.root.position.x - this.root.position.x;
+            const dy = s.root.position.y - this.root.position.y;
+            const dz = s.root.position.z - this.root.position.z;
+
+            if (dx*dx + dy*dy + dz*dz < radiusSq) {
+                hasFriend = true;
+                break;
+            }
+        }
+
+        // ターゲット選択
+        if (count > 0) {
+
+            if (!hasFriend) {
+                // 最も近い対象を選択
+                let best = candidates[0];
+                for (let i = 1; i < count; i++) {
+                    if (candidates[i].distSq < best.distSq) {
+                        best = candidates[i];
+                    }
+                }
+                this.target = best.spirit;
+
+            } else {
+                // 仲間から最も遠い対象を選択
+                let bestScore = -1;
+                let bestSpirit = null;
+
+                for (let i = 0; i < count; i++) {
+                    const prey = candidates[i].spirit;
+
+                    let minDist = Infinity;
+
+                    for (let j = 0; j < GameState.spirits.length; j++) {
+                        const f = GameState.spirits[j];
+
+                        if (f === this || !f.alive || f.class_name !== this.class_name) continue;
+
+                        const dx = f.root.position.x - prey.root.position.x;
+                        const dy = f.root.position.y - prey.root.position.y;
+                        const dz = f.root.position.z - prey.root.position.z;
+
+                        const d = dx*dx + dy*dy + dz*dz;
+                        if (d < minDist) minDist = d;
+                    }
+
+                    if (minDist > bestScore) {
+                        bestScore = minDist;
+                        bestSpirit = prey;
+                    }
+                }
+                this.target = bestSpirit;
+            }
+
+            this.chaseTimer = this.chasePeriod;
+        }
+    }
+
+    chase_target(delta){
+        this.tmp_target.copyFrom(this.target.root.position);
+
+        // ターゲットに向かう速度計算
+        this.tmp_target.subtractToRef(this.predation_position, this.tmp_toTarget);
+        const distance = this.tmp_toTarget.length();
+        if ( distance < this.arrivalRadius ){
+            this.control_velocity.set(0,0,0); //角度振動を防ぐため完全停止
+        } else {
+            let desiredSpeed = this.genome.speed;
+            if (distance < this.slowRadius) {
+                desiredSpeed *= distance / this.slowRadius; //目的地到着時の振動を防ぐ
+            } else {
+                BABYLON.Vector3.TransformNormalToRef(
+                    BABYLON.Axis.Z,
+                    this.root.getWorldMatrix(),
+                    this.tmp_forward
+                );
+                this.tmp_forward.normalize();
+                this.control_velocity.normalizeToRef(this.tmp_controlNorm);
+                let dot = BABYLON.Vector3.Dot(this.tmp_controlNorm, this.tmp_forward);
+                // desiredSpeed を差異角度が大きいほど減衰
+                if (dot <= 0) {
+                    desiredSpeed = this.minSpeedRatio;
+                } else {
+                    desiredSpeed *= (dot * (1-this.minSpeedRatio)+ this.minSpeedRatio);
+                }
+            }
+            this.tmp_toTarget.normalizeToRef(this.tmp_desiredVelocity);
+            this.tmp_desiredVelocity.scaleInPlace(desiredSpeed);
+            this.tmp_desiredVelocity.subtractToRef(this.control_velocity, this.tmp_steering);
+            
+            // 加速度制限
+            if (this.tmp_steering.length() > this.accel) {
+                this.tmp_steering.normalize();
+                this.tmp_steering.scaleInPlace(this.accel);
+            }
+            this.control_velocity.addInPlace(this.tmp_steering);
+            this.rotate_to(this.control_velocity, delta);
+        }
+
+        // 同一敵の追跡期間を限定
+        this.chaseTimer -= delta / 1000;
+        if (this.chaseTimer < 0){
+            this.target = null;
+        }
+    }
+
     update(time, delta){
 
         if ( !this.target || !this.target.alive){
-            const radiusSq = this.visibleRadius * this.visibleRadius;
-
-            // 視界内の獲物を抽出し、近い順にソートして上位3つを確保 
-            const preyCandidates = GameState.spirits
-                .filter(spirit => 
-                    spirit.alive && !spirit.dying &&
-                    this.genome.predation_classes.includes(spirit.class_name)
-                )
-                .map(spirit => ({
-                    spirit,
-                    distSq: BABYLON.Vector3.DistanceSquared(spirit.root.position, this.root.position)
-                }))
-                .filter(item => item.distSq < radiusSq) //視野内に絞り込む
-                .sort((a, b) => a.distSq - b.distSq)
-                .slice(0, 5); // 自分に近い5つに絞り込む
-
-            if (preyCandidates.length > 0) {
-                // 視界内の自分以外の仲間を抽出 
-                const friends = GameState.spirits.filter(spirit => 
-                    spirit !== this &&  spirit.alive && spirit.class_name === this.class_name &&
-                    BABYLON.Vector3.DistanceSquared(spirit.root.position, this.root.position) < radiusSq
-                );
-
-                if (friends.length > 0) {
-                    // 仲間がいない場合は、最も近い獲物（0番目）で決定
-                    this.target = preyCandidates[0].spirit;
-                } else {
-                    // 仲間がいる場合は、仲間から最も遠い獲物を選択
-                    // 各獲物候補について「一番近い仲間との距離」を計算し、その距離が最大になる獲物を採用する
-                    this.target = preyCandidates.reduce((best, current) => {
-                        // 現在の候補(current)に対し、最も近い仲間との距離(minDistToFriendSq)を求める
-                        const minDistToFriendSq = Math.min(...friends.map(f => 
-                            BABYLON.Vector3.DistanceSquared(f.root.position, current.spirit.root.position)
-                        ));
-                        // 初回、または「最も近い仲間との距離」がより大きい候補が見つかれば更新
-                        if (!best || minDistToFriendSq > best.score) {
-                           return { spirit: current.spirit, score: minDistToFriendSq };
-                        }
-                        return best;
-                    }, null).spirit;
-                }
-                this.chaseTimer = this.chasePeriod;
+            this.search_cooldown_counter += delta / 1000;
+            if (this.search_cooldown_counter > SEARCH_COOLDOWN_PERIOD){
+                this.search_cooldown_counter = 0;
+                this.search_target();
             }
         }
 
         if ( this.target && this.target.alive){
-            this.tmp_target.copyFrom(this.target.root.position);
-
-            // ターゲットに向かう速度計算
-            this.tmp_target.subtractToRef(this.predation_position, this.tmp_toTarget);
-            const distance = this.tmp_toTarget.length();
-            if ( distance < this.arrivalRadius ){
-                this.control_velocity.set(0,0,0); //角度振動を防ぐため完全停止
-            } else {
-                let desiredSpeed = this.genome.speed;
-                if (distance < this.slowRadius) {
-                    desiredSpeed *= distance / this.slowRadius; //目的地到着時の振動を防ぐ
-                } else {
-                    BABYLON.Vector3.TransformNormalToRef(
-                        BABYLON.Axis.Z,
-                        this.root.getWorldMatrix(),
-                        this.tmp_forward
-                    );
-                    this.tmp_forward.normalize();
-                    this.control_velocity.normalizeToRef(this.tmp_controlNorm);
-                    let dot = BABYLON.Vector3.Dot(this.tmp_controlNorm, this.tmp_forward);
-                    // desiredSpeed を差異角度が大きいほど減衰
-                    if (dot <= 0) {
-                        desiredSpeed = this.minSpeedRatio;
-                    } else {
-                        desiredSpeed *= (dot * (1-this.minSpeedRatio)+ this.minSpeedRatio);
-                    }
-                }
-                this.tmp_toTarget.normalizeToRef(this.tmp_desiredVelocity);
-                this.tmp_desiredVelocity.scaleInPlace(desiredSpeed);
-                this.tmp_desiredVelocity.subtractToRef(this.control_velocity, this.tmp_steering);
-                
-                // 加速度制限
-                if (this.tmp_steering.length() > this.accel) {
-                    this.tmp_steering.normalize();
-                    this.tmp_steering.scaleInPlace(this.accel);
-                }
-                this.control_velocity.addInPlace(this.tmp_steering);
-                this.rotate_to(this.control_velocity, delta);
-            }
-
-            // 同一敵の追跡期間を限定
-            this.chaseTimer -= delta / 1000;
-            if (this.chaseTimer < 0){
-                this.target = null;
-            }
+            this.chase_target(delta);
         }
         super.update(time, delta);
     }

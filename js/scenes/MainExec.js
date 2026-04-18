@@ -21,6 +21,7 @@ export class Exec {
     }
 
     update(time, delta){
+
         // ◆定期的なオブジェクト生成（生態系の更新）
         GameState.spawn_scheduler.update(time, delta);
 
@@ -35,8 +36,8 @@ export class Exec {
         // ◆精霊の管理
         for (let i = GameState.spirits.length - 1; i >= 0; i--) {
             const spirit = GameState.spirits[i];
-
             spirit.update(time, delta);
+
             if (!spirit.alive) {
                 GameState.spawn.deactivate_spirit(spirit);
                 GameState.spirits.splice(i, 1);
@@ -86,7 +87,7 @@ export class Exec {
             }
         }
 
-        // ◆エフェクトの管理
+    // ◆エフェクトの管理
         for (let i = GameState.effects.length - 1; i >= 0; i--) {
             const effect = GameState.effects[i];
 

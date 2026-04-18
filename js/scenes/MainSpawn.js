@@ -198,8 +198,8 @@ export class SpawnScheduler {
     }
 
     initial_placement(){    
-        for(let i=0; i<18; i++){
-            const pos = this.random_surface_position(4.0);
+        for(let i=0; i<20; i++){
+            const pos = this.random_surface_position(5.0);
             GameState.spawn.activate_spirit("Spirit_Plankton", pos, 0);
         }
 
@@ -210,7 +210,7 @@ export class SpawnScheduler {
         }
 
         for(let i=0; i<0; i++){
-            const pos = this.random_surface_position(5.0);
+            const pos = this.random_surface_position(10.0);
             GameState.spawn.activate_spirit("Spirit_Fish", pos, 0, this.get_genome_modifier(Math.random()*1.5 + 0.5, 100)); // [TEST]
         }
         
@@ -223,7 +223,7 @@ export class SpawnScheduler {
 
         for(let i=0; i<0; i++){
             const pos = this.random_surface_position(3.0);
-            GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0);
+            GameState.spawn.activate_spirit("Spirit_Jelly", pos, 0, this.get_genome_modifier(Math.random()*1.5 + 0.5, 100));
         }
 
         for(let i=0; i<0; i++){
@@ -231,7 +231,7 @@ export class SpawnScheduler {
             GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
         }
 
-        for(let i=0; i<0; i++){
+        for(let i=0; i<20; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Virus", pos, 0);
         }
@@ -357,7 +357,7 @@ export class SpawnScheduler {
         if (this.performance_counter > this.performance_period){
             this.performance_counter = 0;
 
-            // this.dumpSceneProperties(this.scene);
+            this.dumpSceneProperties(this.scene);
             // this.dumpObservers(this.scene);
             // this.dumpObjects(this.scene);
             // this.dumpMaterials(this.scene);
