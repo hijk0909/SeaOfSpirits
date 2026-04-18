@@ -231,7 +231,7 @@ export class SpawnScheduler {
             GameState.spawn.activate_spirit("Spirit_Squid", pos, 0);
         }
 
-        for(let i=0; i<20; i++){
+        for(let i=0; i<0; i++){
             const pos = this.random_surface_position(4.0);
             GameState.spawn.activate_spirit("Spirit_Virus", pos, 0);
         }
