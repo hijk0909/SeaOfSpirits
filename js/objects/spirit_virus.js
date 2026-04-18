@@ -19,7 +19,6 @@ export class Spirit_Virus extends Spirit {
         // クラス遺伝子
         this.genome.hp_max = 10;
         this.genome.hp_decrease = HP_DECREASE;
-        this.genome.disp_scale = 0.08;
         this.genome.is_collidable = false;
         this.genome.collision_radius = 0.15;
 
@@ -41,6 +40,10 @@ export class Spirit_Virus extends Spirit {
 
     create(genome_modifier){
         super.create(genome_modifier);
+
+        this.genome.disp_scale = Math.min(0.8, 0.08 + this.generation * 0.01);
+        const s = this.genome.disp_scale;
+        this.scale.copyFromFloats(s,s,s);
     }
 
     _set_shared_materials(){
@@ -48,63 +51,29 @@ export class Spirit_Virus extends Spirit {
     }
 
     _create_body(){
-/*
-        const phi = (1 + Math.sqrt(5)) / 2;
-        const a = 1.0, b = 1.0 / phi;
-        const positions = [
-            -a,  b,  0,    a,  b,  0,   -a, -b,  0,    a, -b,  0,
-            0, -a,  b,    0,  a,  b,    0, -a, -b,    0,  a, -b,
-            b,  0, -a,    b,  0,  a,   -b,  0, -a,   -b,  0,  a
-        ];
-        const indices = [
-            0, 5,11,  0,11, 2,  0, 2,10,  0,10, 7,  0, 7, 5,
-            1, 9, 5,  1, 5, 7,  1, 7, 8,  1, 8, 3,  1, 3, 9,
-            4, 9, 3,  4, 3, 6,  4, 6, 2,  4, 2,11,  4,11, 9,
-            5, 9,11,  7,10, 8,  6, 8,10,  8, 6, 3, 10, 2, 6
-        ];
-
-        const normals = [];
-        BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-
-        const vertexData = new BABYLON.VertexData();
-        vertexData.positions = positions;
-        vertexData.indices   = indices;
-        vertexData.normals   = normals;
-
-        this.mesh = new BABYLON.Mesh("icosahedron", this.scene);
-        vertexData.applyToMesh(this.mesh);
-        this.mesh.position = new BABYLON.Vector3(0,0,0);
-        this.mesh.checkCollisions = false;
-        this.mesh.isPickable = false;
-        this.mesh.parent = this.root;
-
-        const mat = new BABYLON.PBRMaterial("virusmat", this.scene);
-        // mat.metallic = 0.0;
-        // mat.roughness = 1.0;
-        // mat.albedoColor  = DRIFTING_ALBEDO;
-        // mat.emissiveColor = DRIFTING_EMISSIVE;
-        mat.wireframe = true;
-        this.mesh.material = mat;
-*/
-        }
+    }
 
     activate(pos){
         this.infecting = false;
-//        this.mesh.albedoColor  = DRIFTING_ALBEDO;
-//        this.set_emissive_base(DRIFTING_EMISSIVE);
         super.activate(pos);
 
-        const s = this.genome.disp_scale;
-        this.scale.copyFromFloats(s,s,s);
         this.base_color.copyFrom(DRIFTING_COLOR);
+        this.base_color.a = 1.0;
 
         this.index = GameState.thinManager_virus.register_instance();
-        GameState.thinManager_virus.set_matrix(this.index, this.scale, this.root.position);
-        GameState.thinManager_virus.set_color(this.index, this.base_color);
+        if (this.index === null){
+            this.alive = false;
+        } else {
+            GameState.thinManager_virus.set_matrix(this.index, this.scale, this.root.position);
+            GameState.thinManager_virus.set_color(this.index, this.base_color);
+        }
     }
 
     deactivate(){
-        GameState.thinManager_virus.unregister_instance(this.index);
+        if (this.index !== null){
+            GameState.thinManager_virus.unregister_instance(this.index);
+            this.index = null;
+        }
         super.deactivate();
     }
 
@@ -114,10 +83,6 @@ export class Spirit_Virus extends Spirit {
             if (!this.infectionObject || !this.infectionObject.alive || this.infectionObject.dying){
                 this.infecting = false;
                 this.hp_decrease = this.genome.hp_decrease;
-/*
-                this.mesh.material.albedoColor = DRIFTING_ALBEDO;
-                this.set_emissive_base(DRIFTING_EMISSIVE);
-*/
                 GameState.thinManager_virus.set_color(this.index, DRIFTING_COLOR);
                 // [TEST]
                 GameState.bubbles.add_bubble(this.root.position);
@@ -152,11 +117,6 @@ export class Spirit_Virus extends Spirit {
                         // console.log("[VIRUS] Infection");
                         this.infecting = true;
                         this.hp_decrease = 0.0;
-/*
-                        this.mesh.material.albedoColor = INFECTING_ALBEDO;
-                        this.set_emissive_base(INFECTING_EMISSIVE, 0);
-*/
-
                         GameState.thinManager_virus.set_color(this.index, INFECTING_COLOR);
 
                         this.infectionObject = spirit;
@@ -185,6 +145,10 @@ export class Spirit_Virus extends Spirit {
     }
 
     dispose(){
+        if (this.index !== null){
+            GameState.thinManager_virus.unregister_instance(this.index);
+            this.index = null;
+        }
         super.dispose();
     }
 }

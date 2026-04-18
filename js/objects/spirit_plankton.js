@@ -19,21 +19,12 @@ export class Spirit_Plankton extends Spirit {
 
         // クラス固有のパラメータ
         this.base_color = new BABYLON.Color4();
-        this.index = 0;
+        this.index = null;
         this.tmp_scale = new BABYLON.Vector3();
-//        this.num_spines = 7;
+        this.tmp_position = new BABYLON.Vector3();
     }
 
     create(genome_modifier){
-/*
-        if (this.generation === 0){
-            this.base_color.copyFromFloats(0.0, 1.0, 0.0);
-            this.num_spines = 0;
-        } else {
-            this.base_color.copyFromFloats(0.8, 1.0, 0.4);
-            this.num_spines = 13;
-        }
-*/
 
         const h = (0.42 - this.generation * 0.02 + 1.0) % 1.0;
         const c = MyDraw.hsvToColor3(h, 1.0, 1.0);
@@ -44,71 +35,39 @@ export class Spirit_Plankton extends Spirit {
         this.genome.speed = 0.05;         // プランクトンは動かない。比較基準として 0.05 固定。
         // [TEST]
         this.genome.hp_max = 10 + this.generation * 5;
-        this.genome.disp_scale = 0.4 + this.generation * 0.1;
+        this.genome.disp_scale = Math.min(1.0, 0.4 + this.generation * 0.1);
         const s = this.genome.disp_scale;
         this.tmp_scale.copyFromFloats(s,s,s);
     }
 
     _set_shared_materials(){
-/*
-        let mat;
-
-        mat = new BABYLON.PBRMaterial("spine", this.scene);
-        mat.albedoColor = new BABYLON.Color3(0.0, 0.8, 0.0);
-        mat.metallic = 1.0;
-        mat.roughness = 1.0;
-        mat.alpha = 1.0;
-        this.shared_materials.set("spine", mat);
-
-        mat = null;
-*/
         this.remain_color.copyFrom(this.base_color);
     }
 
     _create_body(){
-
-/*
-        this.mesh = BABYLON.MeshBuilder.CreateSphere( "body", { diameter: 0.5, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
-
-        this.mesh.position = new BABYLON.Vector3(0,0,0);
-        this.mesh.checkCollisions = false;
-        this.mesh.isPickable = false;
-        this.mesh.parent = this.root;
-
-        const mat = new BABYLON.PBRMaterial("material", this.scene); 
-        mat.albedoColor.copyFrom(this.base_color);
-        mat.metallic = 0.2;
-        mat.roughness = 1.0;
-        mat.alpha = 1.0;
-        this.mesh.material = mat;
-*/
-        }
+    }
 
     _set_attachment_definitions(){
-/*
-        let def = {
-            name: "Attachment_Spine",
-            params: {diameterBottom : 0.1, height: 0.15, material_key: "spine"}
-        }
-        for ( let i = 0 ; i < this.num_spines ; i++){
-            const {theta, phi} = this.get_golden_spiral_angles(this.num_spines, i);
-            def.socket = {front:0.0, thetaDeg : phi, phiDeg : theta};
-            this.attachment_definitions.push(structuredClone(def));
-        }
-*/
     }
 
     activate(pos){
         super.activate(pos);
         this.base_color.a = 1.0;
         this.index = GameState.thinManager_plankton.register_instance();
-        GameState.thinManager_plankton.set_matrix(this.index, this.tmp_scale, this.root.position);
-        GameState.thinManager_plankton.set_color(this.index, this.base_color);
+        // console.log("spirit_plankton index=", this.index);
+        if (this.index === null){
+            this.alive = false;
+        } else {
+            GameState.thinManager_plankton.set_matrix(this.index, this.tmp_scale, this.root.position);
+            GameState.thinManager_plankton.set_color(this.index, this.base_color);
+        }
     }
 
     deactivate(){
-        GameState.thinManager_plankton.unregister_instance(this.index);
-
+        if (this.index !== null){
+            GameState.thinManager_plankton.unregister_instance(this.index);
+            this.index = null;
+        }
         super.deactivate();
     }
 
@@ -134,7 +93,9 @@ export class Spirit_Plankton extends Spirit {
 
     update(time, delta){
         if (this.root.position.length() > 4.0){
-            this.control_velocity = this.root.position.scale(-0.001);
+            this.tmp_position.copyFrom(this.root.position);
+            this.tmp_position.scaleInPlace(-0.001);
+            this.control_velocity.copyFrom(this.tmp_position);
         }
         this.control_velocity.scaleInPlace(0.98);
         super.update(time, delta);
@@ -147,6 +108,10 @@ export class Spirit_Plankton extends Spirit {
     }
 
     dispose(){
+        if (this.index !== null){
+            GameState.thinManager_plankton.unregister_instance(this.index);
+            this.index = null;
+        }
         super.dispose();
     }
 }

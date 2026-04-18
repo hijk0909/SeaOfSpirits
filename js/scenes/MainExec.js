@@ -69,7 +69,6 @@ export class Exec {
                     // obj1.control_velocity.scaleInPlace(0.5); //[TEST]捕食したら減速
                     obj2.set_dying();
                     GameState.spawn.spirit_class_state[obj2.class_name].num_preyed += 1;
-
                     obj1.hp = Math.min(obj1.genome.hp_max, obj1.hp + obj2.hp); //[TEST] 捕食相手のHPを取得
 
                     if (obj2.class_name === "Spirit_Plankton"){

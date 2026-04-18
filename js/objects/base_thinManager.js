@@ -28,16 +28,18 @@ export class ThinManager {
     }
 
     register_instance(){    
-        if (this.freeList.length === 0) return null;
+        if (this.freeList.length === 0){ console.log("no instance left"); return null;}
         return this.freeList.pop();
     }
 
     unregister_instance(index){
-        this.set_matrix(index, 0, ZERO_SCALE, ZERO_POSITION, IDENTITY_QUAT);
+        if (index === null) return;
+        this.set_matrix(index, ZERO_SCALE, ZERO_POSITION, IDENTITY_QUAT);
         this.freeList.push(index);
     }
 
     set_matrix(index, scale, position = ZERO_POSITION, rotation = IDENTITY_QUAT){
+        if (index === null) return;
         const quat = rotation ?? IDENTITY_QUAT;
         BABYLON.Matrix.ComposeToRef(
             scale,
@@ -51,6 +53,7 @@ export class ThinManager {
     }
 
     set_position(index, position){
+        if (index === null) return;
         const offset = index * 16;
         this.matrixBuffer[offset + 12] = position.x;
         this.matrixBuffer[offset + 13] = position.y;
@@ -60,11 +63,12 @@ export class ThinManager {
     }
 
     set_color(index, color){
-        const cOffset = index * 4;
-        this.colorBuffer[cOffset + 0] = color.r;
-        this.colorBuffer[cOffset + 1] = color.g;
-        this.colorBuffer[cOffset + 2] = color.b;
-        this.colorBuffer[cOffset + 3] = color.a ?? 1.0;
+        if (index === null) return;
+        const offset = index * 4;
+        this.colorBuffer[offset + 0] = color.r;
+        this.colorBuffer[offset + 1] = color.g;
+        this.colorBuffer[offset + 2] = color.b;
+        this.colorBuffer[offset + 3] = color.a ?? 1.0;
 
         this.colorDirty = true;
     }

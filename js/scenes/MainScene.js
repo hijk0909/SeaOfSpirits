@@ -142,9 +142,9 @@ export class MainScene extends Scene {
 
         // thinInstanceManager の生成
         const st_plankton = GameState.spawn.spirit_class_state["Spirit_Plankton"];
-        GameState.thinManager_plankton = new ThinManager_Plankton(st_plankton.max_num);
-        const st_virus = GameState.spawn.spirit_class_state["Spirit_Virus"];    
-        GameState.thinManager_virus = new ThinManager_Virus(st_virus.max_num);
+        GameState.thinManager_plankton = new ThinManager_Plankton(st_plankton.max_num * 2);
+        const st_virus = GameState.spawn.spirit_class_state["Spirit_Virus"];
+        GameState.thinManager_virus = new ThinManager_Virus(st_virus.max_num * 2);
 
         // 実行クラスの生成
         this.exec = new Exec(this.scene);
