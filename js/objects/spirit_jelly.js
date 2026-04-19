@@ -40,7 +40,6 @@ export class Spirit_Jelly extends Spirit {
         this.num_tentacles = 3 + diff_parts;
         this.num_spines = 7 - diff_parts;
 
-
         super.create(genome_modifier);
     }
 
@@ -50,15 +49,15 @@ export class Spirit_Jelly extends Spirit {
         mat = new BABYLON.PBRMaterial("tentacle", this.scene);
         mat.albedoColor = new BABYLON.Color3(0.0, 1.0, 1.0);
         mat.metallic = 1.0;
-        mat.roughness = 1.0;
-        mat.alpha = 1.0;
+        mat.roughness = 0.5;
+        mat.alpha = 0.6;
         this.shared_materials.set("tentacle", mat);
 
         mat = new BABYLON.PBRMaterial("spine", this.scene);
         mat.albedoColor = new BABYLON.Color3(1.0, 0.8, 0.0);
         mat.metallic = 1.0;
         mat.roughness = 1.0;
-        mat.alpha = 1.0;
+        mat.alpha = 0.6;
         this.shared_materials.set("spine", mat);
 
         mat = null;
@@ -67,7 +66,7 @@ export class Spirit_Jelly extends Spirit {
     }
 
     _create_body(){
-        this.mesh = BABYLON.MeshBuilder.CreateSphere( "spirit_2_body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
+        this.mesh = BABYLON.MeshBuilder.CreateSphere( "jelly_body", { diameter: 1.0, segments: 16, updatable: true, sideOrientation: BABYLON.Mesh.FRONTSIDE }, this.scene );
 
         this.mesh.position = new BABYLON.Vector3(0,0,0);
         this.mesh.checkCollisions = false;
@@ -76,11 +75,12 @@ export class Spirit_Jelly extends Spirit {
 
         this.transform_to_jelly(this.mesh);
 
-        const mat = new BABYLON.PBRMaterial("spirit_2_material", this.scene); 
+        const mat = new BABYLON.PBRMaterial("jelly_material", this.scene); 
         // mat.albedoColor.copyFrom(this.base_color);
         mat.albedoTexture = this.get_spot_texture(this.texture_color_1, this.texture_color_2, 30);
-        mat.metallic = 0.2;
-        mat.roughness = 1.0;
+        mat.metallic = 1.0;
+        mat.roughness = 0.5;
+        mat.alpha = 0.9;
         this.mesh.material = mat;
     }
 

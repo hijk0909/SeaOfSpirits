@@ -81,14 +81,14 @@ export class Spirit_Shark extends Spirit {
         mat = new BABYLON.PBRMaterial("tooth", this.scene);
         mat.albedoColor = new BABYLON.Color3(1.0, 1.0, 1.0);
         mat.metallic = 1.0;
-        mat.roughness = 1.0;
+        mat.roughness = 0.5;
         mat.alpha = 1.0;
         this.shared_materials.set("tooth", mat);
 
         mat = new BABYLON.PBRMaterial("parts", this.scene);
         mat.albedoColor = this.base_color;
         mat.metallic = 1.0;
-        mat.roughness = 1.0;
+        mat.roughness = 0.5;
         mat.alpha = 1.0;
         this.shared_materials.set("parts", mat);
 
@@ -109,8 +109,8 @@ export class Spirit_Shark extends Spirit {
         const mat = new BABYLON.PBRMaterial("shark-body-material", this.scene); 
         mat.albedoTexture = this.get_perlin_texture(this.texture_color_1, this.texture_color_2);
 
-        mat.metallic = 0.0;
-        mat.roughness = 1.0;
+        mat.metallic = 1.0;
+        mat.roughness = 0.8;
         mat.alpha = 1.0;
         this.mesh.material = mat;
     }
@@ -137,22 +137,22 @@ export class Spirit_Shark extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:0.0, thetaDeg:+75, phiDeg:0},
-            params: {bottomScale : 1.0, height : 1.5, twist : 90, material_key : "parts"}
+            params: {bottomScale : 1.0, height : 1.5, offset : -0.1, twist : 90, material_key : "parts"}
         }
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.3, thetaDeg:-25, phiDeg:-30};
-        def.params = {bottomScale : 1.5, height : 2.0, twist : 90, material_key : "parts"};
+        def.params = {bottomScale : 1.5, height : 2.0, offset : -0.1, twist : 90, material_key : "parts"};
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:+45, phiDeg: 180};
-        def.params = {bottomScale : 0.6, height : 1.1, material_key : "parts"};
+        def.params = {bottomScale : 0.6, height : 1.1, offset : -0.1, material_key : "parts"};
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:-35, phiDeg: 180};
-        def.params = {bottomScale : 0.6, height : 1.1, material_key : "parts"};
+        def.params = {bottomScale : 0.6, height : 1.1, offset : -0.1, material_key : "parts"};
         this.attachment_definitions.push(structuredClone(def));
         
         def = {

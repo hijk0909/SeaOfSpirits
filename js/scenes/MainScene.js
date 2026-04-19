@@ -91,10 +91,12 @@ export class MainScene extends Scene {
 
     // ■ 初期生成
     create() {
-        // console.log("GameScene.create");
+        const scene = this.scene;
+
         // [BABYLON DEBUG]
         // this.scene.debugLayer.show();
-        const scene = this.scene;
+
+        // ■ 背景色
         scene.clearColor = new BABYLON.Color4(0.0, 0.03, 0.10, 1.0);
 
         // ■ ライト
@@ -431,6 +433,16 @@ export class MainScene extends Scene {
         if (this.ground){
             this.ground.dispose();
             this.ground = null;
+        }
+
+        if (this.sceneInst){
+            this.sceneInst.dispose();
+            this.sceneInst = null;
+        }
+
+        if (this.engineInst){
+            this.engineInst.dispose();
+            this.engineInst = null;
         }
 
         super.dispose();

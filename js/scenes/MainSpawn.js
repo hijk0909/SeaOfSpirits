@@ -357,7 +357,7 @@ export class SpawnScheduler {
         if (this.performance_counter > this.performance_period){
             this.performance_counter = 0;
 
-            this.dumpSceneProperties(this.scene);
+            // this.dumpSceneProperties(this.scene);
             // this.dumpObservers(this.scene);
             // this.dumpObjects(this.scene);
             // this.dumpMaterials(this.scene);

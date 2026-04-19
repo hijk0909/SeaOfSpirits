@@ -193,7 +193,7 @@ export class ScrollMessage {
         panel.width               = "80%";
         panel.verticalAlignment   = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
         panel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        panel.left = "600px";
+        panel.left = "500px";
         panel.top  = "-120px";
         this.ui.addControl(panel);
         this.panel = panel;

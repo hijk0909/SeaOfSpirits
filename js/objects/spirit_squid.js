@@ -61,17 +61,10 @@ export class Spirit_Squid extends Spirit {
         mat = new BABYLON.PBRMaterial("parts", this.scene);
         mat.albedoColor.copyFrom(this.parts_color);
         mat.metallic = 1.0;
-        mat.roughness = 1.0;
+        mat.roughness = 0.5;
         mat.alpha = 1.0;
         this.shared_materials.set("parts", mat);
-/*
-        mat = new BABYLON.PBRMaterial("tentacle", this.scene);
-        mat.albedoColor.copyFrom(this.tentacle_color);
-        mat.metallic = 1.0;
-        mat.roughness = 1.0;
-        mat.alpha = 1.0;
-        this.shared_materials.set("tentacle", mat);
-*/
+
         mat = null;
 
         this.remain_color.copyFrom(this.parts_color);

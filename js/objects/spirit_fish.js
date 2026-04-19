@@ -4,7 +4,7 @@ import { GameState } from "../GameState.js";
 import { Spirit } from "./base_spirit.js";
 import { MyDraw } from "../utils/DrawUtils.js";
 
-const BOIDS_INTERVAL = 2;  // [適正値] 2
+const BOIDS_INTERVAL = 4;  // [適正値] 4
 
 // 魚
 export class Spirit_Fish extends Spirit {
@@ -18,8 +18,8 @@ export class Spirit_Fish extends Spirit {
         this.genome.collision_radius = 0.30;
         this.genome.mass = 1.0;
         this.genome.speed = 0.06;
-        this.genome.accel = 0.11;
-        this.genome.rotate_speed = 3.0;
+        this.genome.accel = 0.22; //適正値 0.11
+        this.genome.rotate_speed = 1.0; //適正値 3.0
         this.genome.disp_scale = 1.0;
         this.genome.predation_classes = ["Spirit_Plankton"];
         this.genome.predation_socket = {front : 0.0, theta : 0.0 , phi : 0.0};
@@ -65,22 +65,21 @@ export class Spirit_Fish extends Spirit {
 
         mat = new BABYLON.PBRMaterial("tentacle", this.scene);
         mat.albedoColor = new BABYLON.Color3(1.0, 1.0, 0.0);
-        mat.metallic = 1.0;
-        mat.roughness = 1.0;
-        mat.alpha = 1.0;
+        mat.metallic = 0.0;
+        mat.roughness = 0.8;
         this.shared_materials.set("tentacle", mat);
 
         mat = new BABYLON.PBRMaterial("spine", this.scene);
         mat.albedoColor.copyFrom(this.base_color);
         mat.metallic = 1.0;
-        mat.roughness = 1.0;
+        mat.roughness = 0.5;
         mat.alpha = 1.0;
         this.shared_materials.set("spine", mat);
 
         mat = new BABYLON.PBRMaterial("tail", this.scene);
         mat.albedoColor = new BABYLON.Color3(1.0, 0.0, 0.0);
         mat.metallic = 1.0;
-        mat.roughness = 1.0;
+        mat.roughness = 0.5;
         mat.alpha = 1.0;
         this.shared_materials.set("tail", mat);
 
@@ -107,9 +106,8 @@ export class Spirit_Fish extends Spirit {
         } else {
             mat.albedoColor.copyFrom(this.base_color);
         }
-
-        mat.metallic = 0.5;
-        mat.roughness = 1.0;
+        mat.metallic = 1.0;
+        mat.roughness = 0.6;
         mat.alpha = 1.0;
         // mat.fillMode = BABYLON.Material.WireFrameFillMode;
         // mat.unlit = true;
@@ -231,23 +229,23 @@ export class Spirit_Fish extends Spirit {
 
             // 速度の合成
             this.tmpAccel.copyFrom(this.tmpSeparation);
-            this.tmpAccel.scaleInPlace(2.0); //群れから離れる
+            this.tmpAccel.scaleInPlace(1.8); //群れから離れる（適正値：2.0)
 
-            this.tmpAlignment.scaleInPlace(0.3); //群れの速度に合わせる
+            this.tmpAlignment.scaleInPlace(0.6); //群れの速度に合わせる（適正値:0.3）
             this.tmpAccel.addInPlace(this.tmpAlignment);
 
-            this.tmpCohesion.scaleInPlace(0.008); // 群れの中止に向かう
+            this.tmpCohesion.scaleInPlace(0.016); // 群れの中心に向かう（適正値:0.008）
             this.tmpAccel.addInPlace(this.tmpCohesion);
 
             this.tmpVec.copyFrom(this.root.position);
-            this.tmpVec.scaleInPlace(-0.003); //グローバル座標の中心に向かう
+            this.tmpVec.scaleInPlace(-0.006); //グローバル座標の中心に向かう（適正値:-0.003）
             this.tmpAccel.addInPlace(this.tmpVec);
 
             this.tmpAccel.scaleInPlace(this.genome.accel); //加速度の調整
             this.control_velocity.addInPlace(this.tmpAccel);
 
             if (this.control_velocity.length() > this.genome.speed){
-                this.control_velocity = this.control_velocity.normalize()
+                this.control_velocity.normalize();
                 this.control_velocity.scaleInPlace(this.genome.speed);
             }
         }

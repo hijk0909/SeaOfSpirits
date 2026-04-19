@@ -49,7 +49,7 @@ export class Spirit extends Collidable {
         this.predation_socket = null;
         this.predation_position = new BABYLON.Vector3();
 
-        this.emissive_materials = [];
+        this.pbr_materials = [];
         this.base_emissive_color = new BABYLON.Color3();
         this.flash_time = 0;
         this.base_alpha = 1.0;
@@ -149,15 +149,12 @@ export class Spirit extends Collidable {
             this.mesh.scaling = new BABYLON.Vector3(this.genome.disp_scale, this.genome.disp_scale, this.genome.disp_scale);
         }
 
-        // emmisiveColor のある 全マテリアルの収集
-        // clone（個別化）のある マテリアルに限定する
+        // 全PBRマテリアルの収集と、emissiveColor, alpha の初期値の保存
         this.root.getChildMeshes().forEach(m => {
-            if (m.material && typeof m.material.clone === "function"){ //cloneの無いmaterialを除外
-                // m.material = m.material.clone(); //キャラクターごとに個別に点滅させるため
-                if (m.material.emissiveColor){
-                    m.material._emissiveBase = m.material.emissiveColor.clone();
-                    this.emissive_materials.push(m.material);
-                }
+            if (m.material && m.material instanceof BABYLON.PBRMaterial){ //PBRMaterialを収集
+                m.material._emissiveBase = m.material.emissiveColor.clone();
+                m.material._alphaBase = m.material.alpha;
+                this.pbr_materials.push(m.material);
             }
         });
     }
@@ -438,14 +435,14 @@ export class Spirit extends Collidable {
     }
 
     set_emissive_base(color){
-        this.emissive_materials.forEach(mat => {
+        this.pbr_materials.forEach(mat => {
             mat._emissiveBase.copyFrom(color);
             mat.emissiveColor.copyFrom(color);
         });
     }
 
     set_emissive_flash(t=0){
-        this.emissive_materials.forEach(mat => {
+        this.pbr_materials.forEach(mat => {
             mat.emissiveColor.set(
                 mat._emissiveBase.r + t * FALSH_INTENSITY,
                 mat._emissiveBase.g + t * FALSH_INTENSITY,
@@ -455,7 +452,7 @@ export class Spirit extends Collidable {
     }
 
     set_alpha(t=0){
-        this.emissive_materials.forEach(mat => {mat.alpha = t;});
+        this.pbr_materials.forEach(mat => {mat.alpha = mat._alphaBase * t;});
     }
 
     set_dying(){
