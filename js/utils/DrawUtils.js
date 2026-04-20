@@ -454,4 +454,179 @@ export class MyDraw {
         return new BABYLON.Color3(r, g, b);
     }
 
+/*
+static merge_meshes(body, merge_meshes, dispose) {
+
+    // 元の親を保存（bodyの親 = マージ後に復元する親）
+    const parentRef = body.parent;
+
+    // === 歯メッシュ群：頂点にワールド行列を焼き込んでから親解除 ===
+    for (const mesh of merge_meshes) {
+        mesh.computeWorldMatrix(true);
+        // 頂点座標にワールド行列を直接ベイクする
+        mesh.bakeCurrentTransformIntoVertices();
+        mesh.parent = null;
+        mesh.position = BABYLON.Vector3.Zero();
+        mesh.rotationQuaternion = BABYLON.Quaternion.Identity();
+        mesh.scaling = BABYLON.Vector3.One();
+    }
+
+    // === body（唇）：ワールド座標を保存してから頂点に焼き込み ===
+    body.computeWorldMatrix(true);
+    const bodyWorldMatrix = body.getWorldMatrix().clone();
+    const worldPos = new BABYLON.Vector3();
+    const worldRot = new BABYLON.Quaternion();
+    const worldScl = new BABYLON.Vector3();
+    bodyWorldMatrix.decompose(worldScl, worldRot, worldPos);
+
+    // bodyの頂点にもワールド行列を焼き込む
+    body.bakeCurrentTransformIntoVertices();
+    body.parent = null;
+    body.position = BABYLON.Vector3.Zero();
+    body.rotationQuaternion = BABYLON.Quaternion.Identity();
+    body.scaling = BABYLON.Vector3.One();
+
+    // === マージ（この時点で全メッシュはワールド原点基準の頂点を持つ）===
+    merge_meshes.push(body);
+    const mergedBodyMesh = BABYLON.Mesh.MergeMeshes(
+        merge_meshes,
+        dispose,
+        true,
+        null,
+        false,
+        true
+    );
+
+    // === マージ結果に元のbodyのワールド座標を「逆算」して適用 ===
+    // 頂点はワールド座標で焼き込まれているので、
+    // マージ後メッシュはワールド原点にあるとみなし、
+    // 親復元後のローカル座標に変換する必要がある
+    if (parentRef) {
+        parentRef.computeWorldMatrix(true);
+        const parentWorldMatrix = parentRef.getWorldMatrix().clone();
+        const parentInverse = BABYLON.Matrix.Invert(parentWorldMatrix);
+
+        // worldPos/Rot/Sclを親の逆行列で変換してローカル座標にする
+        const localMatrix = bodyWorldMatrix.multiply(parentInverse);
+        const localPos = new BABYLON.Vector3();
+        const localRot = new BABYLON.Quaternion();
+        const localScl = new BABYLON.Vector3();
+        localMatrix.decompose(localScl, localRot, localPos);
+
+        mergedBodyMesh.parent = parentRef;
+        mergedBodyMesh.position = localPos;
+        mergedBodyMesh.rotationQuaternion = localRot;
+        mergedBodyMesh.scaling = localScl;
+    } else {
+        // 親がない場合はワールド座標をそのまま適用
+        mergedBodyMesh.position = worldPos;
+        mergedBodyMesh.rotationQuaternion = worldRot;
+        mergedBodyMesh.scaling = worldScl;
+    }
+
+    return mergedBodyMesh;
+}
+*/
+/*
+static merge_meshes(body, merge_meshes, dispose) {
+
+    // 各マージ対象部品をワールド座標に変換して親子関係を解除
+    for (const mesh of merge_meshes) {
+        mesh.computeWorldMatrix(true);
+        const worldMatrix = mesh.getWorldMatrix().clone();
+        const pos = new BABYLON.Vector3();
+        const rot = new BABYLON.Quaternion();
+        const scl = new BABYLON.Vector3();
+        worldMatrix.decompose(scl, rot, pos);
+
+        mesh.parent = null;
+        mesh.position = pos;
+        mesh.rotationQuaternion = rot;
+        mesh.scaling = scl;
+    }
+
+    // bodyも同じ方法でワールド座標を取得
+    body.computeWorldMatrix(true);
+    const bodyWorldMatrix = body.getWorldMatrix().clone();
+    const worldPos = new BABYLON.Vector3();
+    const worldRot = new BABYLON.Quaternion();
+    const worldScl = new BABYLON.Vector3();
+    bodyWorldMatrix.decompose(worldScl, worldRot, worldPos);
+
+    const parentRef = body.parent;
+    body.parent = null;
+
+    // bodyも配列に追加してマージ
+    merge_meshes.push(body);
+    const mergedBodyMesh = BABYLON.Mesh.MergeMeshes(
+        merge_meshes,
+        dispose,
+        true,
+        null,
+        false,
+        true
+    );
+
+    // マージ結果に元のワールド座標を適用し、親を復元
+    mergedBodyMesh.position = worldPos;
+    mergedBodyMesh.rotationQuaternion = worldRot;
+    mergedBodyMesh.scaling = worldScl;
+    mergedBodyMesh.parent = parentRef;
+
+    return mergedBodyMesh;
+}
+*/
+
+    static merge_meshes(body, merge_meshes, dispose){
+
+        // 各マージ対象部品をワールド座標に変換して親子関係を解除
+        for (const mesh of merge_meshes) {
+            // ワールド行列を確定させる
+            mesh.computeWorldMatrix(true);
+            
+            // ワールド座標での位置・回転・スケールを取得
+            const worldMatrix = mesh.getWorldMatrix().clone();
+            const pos = new BABYLON.Vector3();
+            const rot = new BABYLON.Quaternion();
+            const scl = new BABYLON.Vector3();
+            worldMatrix.decompose(scl, rot, pos);
+            
+            // 親子関係を解除してワールド座標を直接セット
+            mesh.parent = null;
+            mesh.position = pos;
+            mesh.rotationQuaternion = rot;
+            mesh.scaling = scl;
+        }
+
+        // body もワールド座標に変換して親子関係を解除
+        body.computeWorldMatrix(true);
+        const worldPos = body.position.clone();
+        const worldRot = body.rotationQuaternion
+            ? body.rotationQuaternion.clone()
+            : BABYLON.Quaternion.FromEulerAngles( body.rotation.x, body.rotation.y, body.rotation.z );
+        const worldScl = body.scaling.clone();
+
+        const parentRef = body.parent; // 元の親を保存（但し親は座標変異・回転無しが前提）
+        body.parent = null;
+
+        // bodyも配列に追加してマージ
+        merge_meshes.push(body);
+        const mergedBodyMesh = BABYLON.Mesh.MergeMeshes(
+            merge_meshes,
+            dispose,   // disposeSource
+            true,   // allow32BitsIndices
+            null,   // meshSubclass
+            false,  // subdivideWithSubMeshes
+            true    // multiMultiMaterials
+        );
+
+        // マージ結果に元のワールド座標を適用
+        mergedBodyMesh.position = worldPos;
+        mergedBodyMesh.rotationQuaternion = worldRot;
+        mergedBodyMesh.scaling = worldScl;
+        mergedBodyMesh.parent = parentRef;
+
+        return mergedBodyMesh;
+    }
+
 }

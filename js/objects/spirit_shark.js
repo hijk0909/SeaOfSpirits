@@ -119,11 +119,11 @@ export class Spirit_Shark extends Spirit {
 
         let def;
 
-        const mouth_scale = this.genome_modifier?.predation_radius ?? 1.0;
+        const mouth_scale = ( this.genome_modifier?.predation_radius ?? 1.0 ) * 0.5;
         def = {
             name: "Attachment_Mouth",
             socket: {front:0.0, thetaDeg:-5, phiDeg:0},
-            params: {hasTeeth : true, biteSpeed : 3.0, scale : mouth_scale, lip_material_key : "lip", tooth_material_key : "tooth", offset : -0.1}
+            params: {hasTeeth : true, biteSpeed : 3.0, scale : mouth_scale, lip_material_key : "lip", tooth_material_key : "tooth"}
         };
         this.attachment_definitions.push(structuredClone(def));
 
@@ -137,28 +137,28 @@ export class Spirit_Shark extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:0.0, thetaDeg:+75, phiDeg:0},
-            params: {bottomScale : 1.0, height : 1.5, offset : -0.1, twist : 90, material_key : "parts"}
+            params: {bottomScale : 1.0, height : 1.5, offset : -0.1, twist : 90, material_key : "parts", merge : true}
         }
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.3, thetaDeg:-25, phiDeg:-30};
-        def.params = {bottomScale : 1.5, height : 2.0, offset : -0.1, twist : 90, material_key : "parts"};
+        def.params = {bottomScale : 1.5, height : 2.0, offset : -0.1, twist : 90, material_key : "parts", merge : true};
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:+45, phiDeg: 180};
-        def.params = {bottomScale : 0.6, height : 1.1, offset : -0.1, material_key : "parts"};
+        def.params = {bottomScale : 0.6, height : 1.1, offset : -0.1, material_key : "parts", merge : true};
         this.attachment_definitions.push(structuredClone(def));
 
         def.socket = {front:-0.8, thetaDeg:-35, phiDeg: 180};
-        def.params = {bottomScale : 0.6, height : 1.1, offset : -0.1, material_key : "parts"};
+        def.params = {bottomScale : 0.6, height : 1.1, offset : -0.1, material_key : "parts", merge : true};
         this.attachment_definitions.push(structuredClone(def));
         
         def = {
             name: "Attachment_Eye",
             socket: {front:0.8, thetaDeg:+45, phiDeg:-55},
-            params: {scale : 1.0, material_key : "eye"}
+            params: {scale : 1.0, material_key : "eye", merge : true}
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;

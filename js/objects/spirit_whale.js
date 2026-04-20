@@ -88,7 +88,7 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Mouth",
             socket: {front:0.0, thetaDeg:-5, phiDeg:0},
-            params: {hasTeeth :false, biteSpeed : 1.0, lip_material_key : "parts"}
+            params: {hasTeeth :false, biteSpeed : 1.0, scale : 0.8, lip_material_key : "parts"}
         };
         this.attachment_definitions.push(structuredClone(def));
 
@@ -102,7 +102,7 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Eye",
             socket: {front:0.5, thetaDeg:25, phiDeg:-45},
-            params: {scale : 1.5, material_key : "eye"}
+            params: {scale : 1.5, material_key : "eye", merge : true}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -111,7 +111,7 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:0.1, thetaDeg:-45, phiDeg:+90},
-            params: {bottomScale : 1.0, height : 2.0, twist : 90, material_key : "parts"}
+            params: {bottomScale : 1.0, height : 2.0, twist : 90, material_key : "parts", merge : true}
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -120,7 +120,7 @@ export class Spirit_Whale extends Spirit {
         def = {
             name: "Attachment_Spine",
             socket: {front:0.4, thetaDeg:+60, phiDeg:0},
-            params: {diameterBottom : 0.5, height :1.0, material_key : "parts"}
+            params: {diameterBottom : 0.5, height :1.0, material_key : "parts", merge : true}
         };
         this.attachment_definitions.push(structuredClone(def));
     }

@@ -2,8 +2,8 @@
 
 export const GLOBALS = {
 
-    VERSION : "0.8c",
-    DATE : "2026.4.18",
+    VERSION : "0.8d",
+    DATE : "2026.4.20",
 
     DELTA : 16.6667,
     DELTA_CLAMP : 20,
@@ -32,7 +32,7 @@ export const GLOBALS = {
         IMPULSE_VELOCITY_RATIO : 1.5, // 大きくすると、唐突な吹っ飛びケースが増えるが、小さいと、ひっつく時間が長くなりがち
         MAX_EXTERNAL_VELOCITY : 1.2,
         EXTERNAL_VELOCITY_DAMPING : 0.95,
-        OVERLAP_RESOLUTION_RATIO : 0.3,  // 大きくすると、瞬間移動幅が大きくなる
+        OVERLAP_RESOLUTION_RATIO : 0.1,  // 大きくすると、瞬間移動幅が大きくなる
         OVERLAP_RESOLUTION_THRESHOLD : 0.1,
         MAX_REPULSE_VELOCITY : 0.6
     },

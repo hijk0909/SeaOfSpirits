@@ -9,7 +9,7 @@ export class Attachment_Fin extends Attachment{
         super(spirit, socket);
 
         const { position: fp, normal: fn } = socket;
-        const { bottomScale=1.0, height=1.0, twist=0.0, offset = 0.0, material_key = null} = parameters;
+        const { bottomScale=1.0, height=1.0, twist=0.0, offset = 0.0, material_key = null, merge = false} = parameters;
 
         // 頂点座標
         const positions = [
@@ -59,7 +59,13 @@ export class Attachment_Fin extends Attachment{
         mesh.material = mat;
 
         mesh.parent = this.parent;
-        this.nodes.push(mesh);
+
+        if (merge){
+            this.spirit.register_merge_mesh(mesh);
+        } else {
+            this.nodes.push(mesh);
+            this.spirit.register_child_node(mesh);
+        }
     }
 
     update(time, delta){

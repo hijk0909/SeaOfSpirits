@@ -8,6 +8,7 @@ import { Attachment_Tail} from "./attachment_tail.js";
 import { Attachment_Eye} from "./attachment_eye.js";
 import { Attachment_Mouth} from "./attachment_mouth.js";
 import { Attachment_Fin} from "./attachment_fin.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 const FLASH_TIME = 0.15; //秒
 const FALSH_INTENSITY = 0.10;
@@ -45,12 +46,14 @@ export class Spirit extends Collidable {
             'Attachment_Tail'      : Attachment_Tail,
             'Attachment_Tentacle'  : Attachment_Tentacle
         }
+        this.merge_meshes = [];
+        this.child_nodes = [];
 
         this.predation_socket = null;
         this.predation_position = new BABYLON.Vector3();
 
-        this.pbr_materials = [];
-        this.base_emissive_color = new BABYLON.Color3();
+        this.pbr_materials = new Set();
+        // this.base_emissive_color = new BABYLON.Color3();
         this.flash_time = 0;
         this.base_alpha = 1.0;
 
@@ -99,6 +102,13 @@ export class Spirit extends Collidable {
         this.rotate_speed = this.genome.rotate_speed;
     }
 
+    register_merge_mesh(mesh){
+        this.merge_meshes.push(mesh);
+    }
+    register_child_node(node){
+        this.child_nodes.push(node);
+    }
+
     create(genome_modifier){
         // genomeの修正
         this.genome_modifier = genome_modifier;
@@ -144,19 +154,41 @@ export class Spirit extends Collidable {
             }
         }
 
-        // ボディの表示用の大きさを調整（アタッチメントを全てくっつけてから）
+        // 全PBRマテリアルの収集と、emissiveColor, alpha の初期値の保存
+        this.root.getChildMeshes().forEach(m => {
+            const mat = m.material;
+            if (mat && mat instanceof BABYLON.PBRMaterial) {
+                if (this.pbr_materials.has(mat)) return;   // すでに登録済みならスキップ
+                mat._emissiveBase = mat.emissiveColor.clone();
+                mat._alphaBase = mat.alpha;
+                this.pbr_materials.add(mat);
+            }
+        });
+
+        // Merge対象の部品のマージ
+        if (this.merge_meshes.length > 0) {
+
+            // 部品のマージ
+            // 注：this.mesh を BABYLON の dispose に任せると、マージ対象でない子部品まで dispose する
+            const mergedBodyMesh = MyDraw.merge_meshes(this.mesh, this.merge_meshes, false);
+
+            // マージしない子部品のparentを新しいボディメッシュに付け替える
+            for (const node of this.child_nodes) {
+                node.parent = mergedBodyMesh;
+            }
+
+            // マージした旧meshを、手作業でdisposeする
+            for (const m of this.merge_meshes) {
+                m.dispose(false, false); // doNotRecurse=false, disposeMaterialAndTextures=false
+            }
+
+            this.mesh = mergedBodyMesh;
+        }
+
+        // ボディの表示用の大きさを調整（アタッチメントを全てくっつけたりマージを終えてから）
         if (this.mesh){
             this.mesh.scaling = new BABYLON.Vector3(this.genome.disp_scale, this.genome.disp_scale, this.genome.disp_scale);
         }
-
-        // 全PBRマテリアルの収集と、emissiveColor, alpha の初期値の保存
-        this.root.getChildMeshes().forEach(m => {
-            if (m.material && m.material instanceof BABYLON.PBRMaterial){ //PBRMaterialを収集
-                m.material._emissiveBase = m.material.emissiveColor.clone();
-                m.material._alphaBase = m.material.alpha;
-                this.pbr_materials.push(m.material);
-            }
-        });
     }
 
     _set_shared_materials(){

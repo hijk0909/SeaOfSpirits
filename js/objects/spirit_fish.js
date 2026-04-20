@@ -132,7 +132,7 @@ export class Spirit_Fish extends Spirit {
         def = {
             name: "Attachment_Spine",
             socket: {front:-0.2, thetaDeg:-45, phiDeg: +90},
-            params: {diameterBottom : 0.2, height :0.45, material_key : "spine"}
+            params: {diameterBottom : 0.2, height :0.45, material_key : "spine", merge : true}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -148,7 +148,7 @@ export class Spirit_Fish extends Spirit {
         def ={
             name: "Attachment_Eye",
             socket: {front:0.3, thetaDeg:45, phiDeg: -90},
-            params:  {scale : 1.0, material_key : "eye"}
+            params:  {scale : 1.0, material_key : "eye", merge : true}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;

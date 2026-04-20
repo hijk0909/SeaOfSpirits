@@ -29,6 +29,7 @@ export class Attachment {
         root.rotationQuaternion = BABYLON.Quaternion.FromRotationMatrix(rotMat);
 
         this.nodes.push(root);
+        this.spirit.register_child_node(root);
         return root;
     }
 

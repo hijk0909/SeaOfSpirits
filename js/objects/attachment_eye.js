@@ -9,7 +9,7 @@ export class Attachment_Eye extends Attachment{
         super(spirit, socket);
 
         const { position: ep, normal: en } = socket;
-        const { scale = 1.0, offset = 0.0, material_key = null} = parameters;
+        const { scale = 1.0, offset = 0.0, material_key = null , merge = false} = parameters;
 
         const mesh = BABYLON.MeshBuilder.CreateSphere( "eye", { diameter: 0.2 * scale, segments: 16}, this.scene );
         mesh.checkCollisions = false;
@@ -24,7 +24,15 @@ export class Attachment_Eye extends Attachment{
             en,                   // forward（= +Z を向けたい方向）
             BABYLON.Axis.Y        // up（できるだけ Y を上に保つ）
         );
-        this.nodes.push(mesh);
+
+        if (merge){
+            this.spirit.register_merge_mesh(mesh);
+        } else {
+            this.nodes.push(mesh);
+            this.spirit.register_child_node(mesh);
+        }
+
+        this.mesh = mesh;
     }
 
     update(time, delta){

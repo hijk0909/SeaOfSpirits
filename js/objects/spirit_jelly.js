@@ -103,7 +103,7 @@ export class Spirit_Jelly extends Spirit {
 
         def = {
             name: "Attachment_Spine",
-            params: {diameterBottom : 0.15, height :0.24, material_key : "spine"}
+            params: {diameterBottom : 0.15, height :0.24, material_key : "spine", merge : true}
         };
         num_parts = this.num_spines;
         for (let i = 0; i < num_parts; i++){

@@ -9,7 +9,7 @@ export class Attachment_Spine extends Attachment{
         super(spirit, socket);
 
         const { position: sp1p, normal: sp1n } = socket;
-        const { diameterBottom=0.2, height=0.45, offset = 0.0, material_key = null} = parameters;
+        const { diameterBottom=0.2, height=0.45, offset = 0.0, material_key = null, merge = false} = parameters;
 
         const mesh = BABYLON.MeshBuilder.CreateCylinder("spine", {
             diameterTop: 0.0, diameterBottom: diameterBottom, height: height, tessellation: 8
@@ -36,7 +36,13 @@ export class Attachment_Spine extends Attachment{
         mesh.material = this.spirit.shared_materials.get(material_key);
 
         mesh.parent = this.parent;
-        this.nodes.push(mesh);
+
+        if (merge){
+            this.spirit.register_merge_mesh(mesh);
+        } else {
+            this.nodes.push(mesh);
+            this.spirit.register_child_node(mesh);
+        }
     }
 
     update(time, delta){

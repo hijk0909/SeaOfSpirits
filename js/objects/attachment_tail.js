@@ -48,6 +48,7 @@ export class Attachment_Tail extends Attachment{
         tail.scaling = new BABYLON.Vector3(scale, scale, scale);
         this.mesh = tail;
         this.nodes.push(tail);
+        this.spirit.register_child_node(tail);
 
         // テンポラリ変数
         this.tmp_qSwing      = new BABYLON.Quaternion();

@@ -105,7 +105,7 @@ export class Spirit_Squid extends Spirit {
         def ={
             name: "Attachment_Eye",
             socket: {front:0.0, thetaDeg:+15, phiDeg: -90},
-            params:  {scale : 1.0, material_key : "eye"}
+            params:  {scale : 1.0, material_key : "eye", merge : true}
         };
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;
@@ -114,7 +114,7 @@ export class Spirit_Squid extends Spirit {
         def = {
             name: "Attachment_Fin",
             socket: {front:+0.2, thetaDeg:0, phiDeg: +25},
-            params: {bottomScale : 1.2, height : 0.8, twist : 90, material_key : "parts" }
+            params: {bottomScale : 1.2, height : 0.8, twist : 90, material_key : "parts" , merge : true}
         }
         this.attachment_definitions.push(structuredClone(def));
         def.socket.phiDeg *= -1;

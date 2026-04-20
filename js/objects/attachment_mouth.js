@@ -2,6 +2,7 @@
 import { GLOBALS } from '../GameConst.js';
 import { GameState } from "../GameState.js";
 import { Attachment } from "./base_attachment.js";
+import { MyDraw } from "../utils/DrawUtils.js";
 
 export class Attachment_Mouth extends Attachment{
 
@@ -12,7 +13,8 @@ export class Attachment_Mouth extends Attachment{
         this.hasTeeth = hasTeeth;
         this.biteSpeed = biteSpeed;
 
-        const r = 0.5; //スケール倍率
+        this.upper_merge_meshes = [];
+        this.lower_merge_meshes = [];
 
         // テンポラリ変数
         this.tmp_rotQuat      = new BABYLON.Quaternion();
@@ -27,23 +29,38 @@ export class Attachment_Mouth extends Attachment{
         this.root_upper = this.create_root(socket, offset);
         this.root_upper_rotationQuaternion_base = this.root_upper.rotationQuaternion.clone();
         this.root_upper_position_base = this.root_upper.position.clone();
-        this.root_upper.scaling.set(scale * r, scale * r, scale * r);
-        this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, -45);
+        this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, 0);
 
         this.root_lower = this.create_root(socket, offset);
         this.root_lower_rotationQuaternion_base = this.root_lower.rotationQuaternion.clone();
         this.root_lower_position_base = this.root_lower.position.clone();
-        this.root_lower.scaling.set(scale * r, scale * r, scale * r);
-        this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, +45);
+        this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, 0);
+
+        // スケーリング
+        this.root_upper.scaling.set(scale, scale, scale);
+        this.root_lower.scaling.set(scale, scale, scale);
 
         // 唇の生成
-        this.create_lip(this.root_upper, parameters);
-        this.create_lip(this.root_lower, parameters);
+        const upper_lip = this.create_lip(null, parameters);
+        const lower_lip = this.create_lip(null, parameters);
 
-        // 歯の生成
+        // 歯の生成 および メッシュのマージ
         if (this.hasTeeth){
-            this.create_teeth(this.root_upper, true, 8, parameters);
-            this.create_teeth(this.root_lower, false, 8, parameters);
+            this.create_teeth(upper_lip, true, 8, parameters);
+            this.create_teeth(lower_lip, false, 8, parameters);
+
+            const upper_merged_mesh = MyDraw.merge_meshes(upper_lip, this.upper_merge_meshes, true);
+            const lower_merged_mesh = MyDraw.merge_meshes(lower_lip, this.lower_merge_meshes, true);
+
+            upper_merged_mesh.parent = this.root_upper;
+            lower_merged_mesh.parent = this.root_lower;
+            this.nodes.push(upper_merged_mesh);
+            this.nodes.push(lower_merged_mesh);
+        } else {
+            upper_lip.parent = this.root_upper;
+            lower_lip.parent = this.root_lower;
+            this.nodes.push(upper_lip);
+            this.nodes.push(lower_lip);
         }
     }
 
@@ -51,23 +68,23 @@ export class Attachment_Mouth extends Attachment{
 
         const angleRad = BABYLON.Tools.ToRadians(angleDeg);
   
-        //（１） 回転クォータニオン
+        // 回転クォータニオン
         BABYLON.Quaternion.RotationAxisToRef(BABYLON.Axis.X, angleRad, this.tmp_rotQuat);
         this.tmp_rotQuat.multiplyToRef(baseQuat, this.tmp_finalQuat);
         root.rotationQuaternion.copyFrom(this.tmp_finalQuat);
 
-        //（２）支点オフセット：ローカルZ軸上の fulcrum 点を回転で動かす
+        // 支点オフセット：ローカルZ軸上の fulcrum 点を回転で動かす
         //    fulcrum点からrootへのベクトル (0, 0, -fulcrum) を rotQuat で回転
         this.tmp_offsetLocal.set(0, 0, -fulcrum);
         this.tmp_offsetLocal.applyRotationQuaternionToRef(this.tmp_rotQuat, this.tmp_offsetRotated);
 
-        //（３）ワールド座標での支点位置 = basePosition + baseQuat で回転したfulcrum方向
+        // ワールド座標での支点位置 = basePosition + baseQuat で回転したfulcrum方向
         //    支点はbasePositionからローカルZ方向にfulcrumずれた位置
         this.tmp_fulcrumLocal.set(0, 0, fulcrum);
         this.tmp_fulcrumLocal.applyRotationQuaternionToRef(baseQuat, this.tmp_fulcrumWorld);
         this.tmp_fulcrumWorld.addInPlace(basePosition);
 
-        //（４）root位置 = 支点ワールド位置 + 回転後オフセット（baseQuatも考慮）
+        // root位置 = 支点ワールド位置 + 回転後オフセット（baseQuatも考慮）
         this.tmp_offsetRotated.applyRotationQuaternionToRef(baseQuat, this.tmp_offsetWorld);
         this.tmp_offsetWorld.addInPlace(this.tmp_fulcrumWorld);
         root.position.copyFrom(this.tmp_offsetWorld);
@@ -138,21 +155,20 @@ export class Attachment_Mouth extends Attachment{
         
         sphere.parent = root;
         this.nodes.push(sphere);
-
         return sphere;
     }
 
     create_tooth(position, diameterBottom, height, upper, tooth_material_key = null) {
 
         let dt, db, p;
-        if (!upper){
+        if (upper){
             dt = diameterBottom;
             db = 0.0;
-            p =  position.add(new BABYLON.Vector3(0, -height / 2, 0));
+            p =  position.add(new BABYLON.Vector3(0, -height, 0));
         } else {
             dt = 0.0;
             db = diameterBottom;
-            p = position.add(new BABYLON.Vector3(0, +height / 2, 0));
+            p = position.add(new BABYLON.Vector3(0, +height, 0));
         }
         const mesh = BABYLON.MeshBuilder.CreateCylinder("tooth", {
             diameterTop: dt, diameterBottom: db, height: height, tessellation: 8
@@ -163,12 +179,12 @@ export class Attachment_Mouth extends Attachment{
 
         mesh.material = this.spirit.shared_materials.get(tooth_material_key);
 
-        this.nodes.push(mesh);
+        // this.nodes.push(mesh);
         return mesh;
     }
 
-    create_teeth(root, upper, num_teeth, parameters = {}){
-        const {diameterBottom=0.3, height=0.7, R=2.0, Z_bend = 5.0, Z_offset = 0.10, tooth_material_key = ""} = parameters;
+    create_teeth(parent, upper, num_teeth, parameters = {}){
+        const {diameterBottom=0.3, height=0.7, R=2.0, Z_bend = 5.0, Z_offset = 0, tooth_material_key = ""} = parameters;
         let startAngleDeg, endAngleDeg;
         const maxAngleDeg = 25;
         const stepAngleDeg = maxAngleDeg / (num_teeth / 2);
@@ -181,10 +197,19 @@ export class Attachment_Mouth extends Attachment{
         }
         for ( let angleDeg = startAngleDeg; angleDeg <= endAngleDeg; angleDeg += stepAngleDeg){
             const angleRad = BABYLON.Tools.ToRadians(angleDeg);
-            const position = new BABYLON.Vector3( R * Math.sin(angleRad), 0, Z_bend * (Math.cos(angleRad) - 1)+ Z_offset);
+            // 唇と同じ計算式で位置を算出
+            const x = R * Math.sin(angleRad);
+            const xRatio = Math.max(-1, Math.min(1, x / R));
+            const z = Z_bend * (Math.sqrt(1 - xRatio * xRatio) - 1.0) + Z_offset;
+            const position = new BABYLON.Vector3( x, 0, z);
             const scale = ((maxAngleDeg - Math.abs(angleDeg) )/ maxAngleDeg) * 0.6 + 0.4;
             const tooth = this.create_tooth(position, diameterBottom * scale, height * scale, upper, tooth_material_key);
-            tooth.parent = root;
+            tooth.parent = parent;
+            if (upper){
+                this.upper_merge_meshes.push(tooth);
+            } else {
+                this.lower_merge_meshes.push(tooth);
+            }
         }
     }
 
@@ -192,8 +217,8 @@ export class Attachment_Mouth extends Attachment{
 
         const minAngleDeg=15, maxAngleDeg=28;
         let angleDeg = (maxAngleDeg - minAngleDeg) * Math.sin(time * this.biteSpeed / 200) + ((minAngleDeg + maxAngleDeg) / 2) 
-        this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, +angleDeg);
-        this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, -angleDeg);
+        this.rotate_root(this.root_upper, this.root_upper_rotationQuaternion_base, this.root_upper_position_base, -angleDeg);
+        this.rotate_root(this.root_lower, this.root_lower_rotationQuaternion_base, this.root_lower_position_base, +angleDeg);
 
         super.update(time, delta);
     }
