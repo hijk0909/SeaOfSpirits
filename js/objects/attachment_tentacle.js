@@ -8,7 +8,6 @@ const LOD_REFRESH_PERIOD = 1.0; // [適正値] 1.0
 
 export class Attachment_Tentacle extends Attachment {
 
-    // ─────────────────────────────────────────────────────────
     constructor(spirit, socket, parameters = {}) {
         super(spirit, socket);
 

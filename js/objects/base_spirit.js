@@ -154,7 +154,8 @@ export class Spirit extends Collidable {
             }
         }
 
-        // 全PBRマテリアルの収集と、emissiveColor, alpha の初期値の保存
+        // 全PBRマテリアルの収集と、
+/*
         this.root.getChildMeshes().forEach(m => {
             const mat = m.material;
             if (mat && mat instanceof BABYLON.PBRMaterial) {
@@ -164,28 +165,53 @@ export class Spirit extends Collidable {
                 this.pbr_materials.add(mat);
             }
         });
-
-        // Merge対象の部品のマージ
+*/
+        // Merge対象のアタッチメントのマージ
         if (this.merge_meshes.length > 0) {
-
             // 部品のマージ
             // 注：this.mesh を BABYLON の dispose に任せると、マージ対象でない子部品まで dispose する
             const mergedBodyMesh = MyDraw.merge_meshes(this.mesh, this.merge_meshes, false);
-
             // マージしない子部品のparentを新しいボディメッシュに付け替える
             for (const node of this.child_nodes) {
                 node.parent = mergedBodyMesh;
             }
-
             // マージした旧meshを、手作業でdisposeする
             for (const m of this.merge_meshes) {
                 m.dispose(false, false); // doNotRecurse=false, disposeMaterialAndTextures=false
             }
-
             this.mesh = mergedBodyMesh;
+            this.mesh.parent = this.root;
         }
 
-        // ボディの表示用の大きさを調整（アタッチメントを全てくっつけたりマージを終えてから）
+
+        // 全 PBRマテリアルの収集 および emissiveColor, alpha の初期値保存
+        this.root.getChildMeshes().forEach(m => {
+            // （１）メッシュの material
+            const mat = m.material;
+            if (mat && mat instanceof BABYLON.PBRMaterial) {
+                if (!this.pbr_materials.has(mat)) {
+                    mat._emissiveBase = mat.emissiveColor.clone();
+                    mat._alphaBase = mat.alpha;
+                    this.pbr_materials.add(mat);
+                }
+            }
+            // （２）サブメッシュの material
+            if (m.subMeshes && m.subMeshes.length > 0) {
+                for (const sm of m.subMeshes) {
+                    const smMat = sm.getMaterial();
+                    if (smMat && smMat instanceof BABYLON.PBRMaterial) {
+                        if (!this.pbr_materials.has(smMat)) {
+                            smMat._emissiveBase = smMat.emissiveColor.clone();
+                            smMat._alphaBase = smMat.alpha;
+                            this.pbr_materials.add(smMat);
+                        }
+                    }
+               }
+            }
+        });
+
+        // ボディの表示用の大きさを調整
+        // （アタッチメントを全てくっつけたりマージを終えてから）
         if (this.mesh){
             this.mesh.scaling = new BABYLON.Vector3(this.genome.disp_scale, this.genome.disp_scale, this.genome.disp_scale);
         }
